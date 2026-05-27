@@ -119,3 +119,20 @@
   font-size: 24rpx;
   color: #999;
 }
+
+.tournament-delete-btn {
+  width: 52rpx;
+  height: 52rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.tournament-delete-btn:active {
+  background: #fce4e4;
+}
+
+.tournament-delete-icon {
+  font-size: 32rpx;
+}

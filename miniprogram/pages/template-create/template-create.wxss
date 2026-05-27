@@ -1,0 +1,449 @@
+.container {
+  background: #f5f5f5;
+  min-height: 100vh;
+  padding-bottom: 40rpx;
+}
+
+.header {
+  background: linear-gradient(135deg, #1AAD19, #15a814);
+  color: white;
+  padding: 30rpx 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.title {
+  font-size: 32rpx;
+  font-weight: 600;
+  margin-bottom: 10rpx;
+}
+
+.subtitle {
+  font-size: 24rpx;
+  opacity: 0.9;
+}
+
+.card {
+  margin: 0 20rpx 20rpx;
+  background: white;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+}
+
+.section-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 16rpx;
+}
+
+.picker-value {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1rpx solid #e0e0e0;
+  border-radius: 8rpx;
+  padding: 16rpx 20rpx;
+  font-size: 28rpx;
+  background: #fafafa;
+}
+
+.arrow {
+  color: #999;
+  font-size: 24rpx;
+}
+
+.input {
+  border: 1rpx solid #e0e0e0;
+  border-radius: 8rpx;
+  padding: 0 20rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  font-size: 28rpx;
+  background: #fafafa;
+  box-sizing: border-box;
+  display: block;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 120rpx;
+  border: 1rpx solid #e0e0e0;
+  border-radius: 8rpx;
+  padding: 16rpx 20rpx;
+  font-size: 28rpx;
+  background: #fafafa;
+  box-sizing: border-box;
+}
+
+.config-row {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+}
+
+.config-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.config-label {
+  font-size: 24rpx;
+  color: #666;
+  margin-bottom: 10rpx;
+}
+
+.tip-box {
+  margin: 0 20rpx 20rpx;
+  padding: 20rpx;
+  background: #fff8e1;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  color: #795548;
+  line-height: 1.6;
+}
+
+.full-btn {
+  margin: 30rpx 20rpx;
+}
+
+.btn-primary {
+  background: #1AAD19;
+  color: white;
+  border: none;
+  border-radius: 8rpx;
+  padding: 16rpx 30rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.btn-primary:active {
+  background: #15a814;
+}
+
+.btn-secondary {
+  background: #f0f0f0;
+  color: #333;
+  border: none;
+  border-radius: 8rpx;
+  padding: 16rpx 30rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.btn-secondary:active {
+  background: #e0e0e0;
+}
+
+/* ===== 步骤2：编排列表 ===== */
+
+.slot-list {
+  padding: 0 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.slot-card {
+  display: flex;
+  align-items: center;
+  background: white;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  margin-bottom: 12rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+  transition: all 0.2s;
+}
+
+.slot-card:active {
+  background: #f9f9f9;
+}
+
+.slot-card.dragging {
+  opacity: 0.4;
+  transform: scale(0.95);
+  border: 2rpx dashed #1AAD19;
+}
+
+.slot-card.drop-target {
+  border: 2rpx solid #1AAD19;
+  background: #e6f7e6;
+  transform: scale(1.02);
+}
+
+.slot-order {
+  min-width: 56rpx;
+  height: 48rpx;
+  background: #1AAD19;
+  color: white;
+  border-radius: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20rpx;
+  font-weight: 600;
+  flex-shrink: 0;
+  margin-right: 16rpx;
+  padding: 0 12rpx;
+}
+
+.slot-id {
+  font-size: 20rpx;
+}
+
+.slot-content {
+  flex: 1;
+}
+
+.slot-stage-badge {
+  display: inline-block;
+  font-size: 20rpx;
+  padding: 2rpx 10rpx;
+  border-radius: 4rpx;
+  margin-bottom: 6rpx;
+}
+
+.slot-stage-badge.group {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.slot-stage-badge.knockout {
+  background: #fce4ec;
+  color: #c62828;
+}
+
+.slot-teams {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 8rpx;
+}
+
+.slot-team {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+.slot-team.home {
+  color: #1565c0;
+}
+
+.slot-team.away {
+  color: #c62828;
+}
+
+.slot-vs {
+  font-size: 20rpx;
+  color: #999;
+  font-weight: 600;
+}
+
+.slot-meta {
+  display: flex;
+  gap: 20rpx;
+  font-size: 22rpx;
+  color: #666;
+}
+
+.slot-venue {
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 4rpx 12rpx;
+  border-radius: 4rpx;
+}
+
+.slot-time {
+  color: #666;
+}
+
+.slot-delete {
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
+  color: #e53935;
+  flex-shrink: 0;
+}
+
+.drag-ghost {
+  position: fixed;
+  width: 500rpx;
+  background: white;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.2);
+  z-index: 200;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  border: 2rpx solid #1AAD19;
+  text-align: center;
+}
+
+.drag-ghost.show {
+  opacity: 0.9;
+}
+
+.ghost-text {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+.arrange-actions {
+  padding: 0 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.btn-add {
+  width: 100%;
+  background: #f5f5f5;
+  color: #1AAD19;
+  border: 2rpx dashed #1AAD19;
+  border-radius: 8rpx;
+  padding: 16rpx;
+  font-size: 26rpx;
+  font-weight: 500;
+}
+
+.btn-add:active {
+  background: #e8f5e9;
+}
+
+.step-buttons {
+  display: flex;
+  gap: 16rpx;
+  padding: 0 20rpx;
+  margin-top: 20rpx;
+}
+
+.step-buttons button {
+  flex: 1;
+}
+
+/* ===== 步骤3：概览 ===== */
+
+.summary-card .summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+  font-size: 26rpx;
+}
+
+.summary-card .summary-row:last-child {
+  border-bottom: none;
+}
+
+.summary-label {
+  color: #666;
+}
+
+.summary-value {
+  color: #333;
+  font-weight: 500;
+}
+
+/* ===== 弹窗 ===== */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0);
+  z-index: 99;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.modal-overlay.show {
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal {
+  position: fixed;
+  bottom: -600rpx;
+  left: 0;
+  right: 0;
+  max-height: 80vh;
+  background: white;
+  border-radius: 20rpx 20rpx 0 0;
+  z-index: 100;
+  transition: bottom 0.3s;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal.show {
+  bottom: 0;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx;
+  border-bottom: 1rpx solid #eee;
+}
+
+.modal-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.modal-close {
+  font-size: 32rpx;
+  color: #999;
+}
+
+.modal-body {
+  flex: 1;
+  padding: 20rpx;
+  overflow-y: auto;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 10rpx;
+  padding: 20rpx;
+  border-top: 1rpx solid #eee;
+}
+
+.edit-section {
+  margin-bottom: 20rpx;
+}
+
+.edit-label {
+  font-size: 24rpx;
+  color: #666;
+  margin-bottom: 8rpx;
+}
+
+.btn-cancel,
+.btn-confirm {
+  flex: 1;
+  padding: 14rpx;
+  border: none;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
+.btn-cancel {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.btn-confirm {
+  background: #1AAD19;
+  color: white;
+}

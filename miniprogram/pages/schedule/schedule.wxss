@@ -47,7 +47,8 @@
 
 /* 比赛项 */
 .schedule-match {
-  padding: 24rpx 0;
+  position: relative;
+  padding: 14rpx 0 12rpx;
   border-bottom: 1rpx solid #f5f5f5;
 }
 
@@ -63,20 +64,20 @@
 
 .team-name {
   flex: 1;
-  font-size: 28rpx;
+  font-size: 27rpx;
   font-weight: 500;
   color: #333;
 }
 
 .team-name.home {
   text-align: right;
-  padding-right: 20rpx;
+  padding-right: 16rpx;
   color: #1565c0;
 }
 
 .team-name.away {
   text-align: left;
-  padding-left: 20rpx;
+  padding-left: 16rpx;
   color: #c62828;
 }
 
@@ -106,7 +107,7 @@
   align-items: center;
   justify-content: center;
   gap: 16rpx;
-  margin-top: 10rpx;
+  margin-top: 6rpx;
 }
 
 .status-tag {
@@ -126,7 +127,7 @@
 }
 
 .schedule-extra {
-  margin-top: 8rpx;
+  margin-top: 5rpx;
   text-align: center;
   font-size: 22rpx;
   color: #666;
@@ -205,16 +206,27 @@
 }
 
 .match-actions {
-  margin-top: 10rpx;
+  margin-top: 8rpx;
   display: flex;
   justify-content: center;
-  gap: 12rpx;
+  gap: 10rpx;
 }
 
 .action-btn {
-  font-size: 22rpx;
-  padding: 8rpx 16rpx;
+  font-size: 21rpx;
+  padding: 6rpx 14rpx;
   border-radius: 8rpx;
+}
+
+/* 小组赛编号：左上角固定，避免占用主布局高度 */
+.match-no {
+  position: absolute;
+  top: 8rpx;
+  left: 6rpx;
+  font-size: 24rpx;
+  color: #1AAD19;
+  font-weight: 600;
+  line-height: 1;
 }
 
 .action-btn.edit {

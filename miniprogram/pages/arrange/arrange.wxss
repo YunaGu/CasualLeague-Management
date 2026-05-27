@@ -1,0 +1,477 @@
+.container {
+  background: #f5f5f5;
+  padding-bottom: 100rpx;
+}
+
+.header {
+  background: linear-gradient(135deg, #1AAD19, #15a814);
+  color: white;
+  padding: 30rpx 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.title {
+  font-size: 32rpx;
+  font-weight: 600;
+  margin-bottom: 10rpx;
+}
+
+.subtitle {
+  font-size: 24rpx;
+  opacity: 0.9;
+}
+
+.matches-section {
+  padding: 20rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  margin-bottom: 20rpx;
+  color: #333;
+}
+
+.match-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15rpx;
+}
+
+.match-card {
+  background: white;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
+  transition: all 0.3s;
+}
+
+.match-card:active {
+  transform: translateY(-2rpx);
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.12);
+}
+
+.match-card.unallocated {
+  border-left: 4rpx solid #ff6b6b;
+  background: #fafafa;
+}
+
+.match-card.allocated {
+  border-left: 4rpx solid #1AAD19;
+}
+
+.match-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15rpx;
+}
+
+.match-round {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.match-status {
+  padding: 8rpx 12rpx;
+  border-radius: 6rpx;
+  font-size: 20rpx;
+}
+
+.match-status.empty {
+  background: #ffe6e6;
+  color: #ff6b6b;
+}
+
+.match-status.allocated {
+  background: #e6f7e6;
+  color: #1AAD19;
+}
+
+.match-teams {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12rpx;
+  padding: 12rpx;
+  background: #f9f9f9;
+  border-radius: 8rpx;
+}
+
+.team-name {
+  font-size: 24rpx;
+  color: #333;
+  font-weight: 500;
+  flex: 1;
+  text-align: center;
+}
+
+.vs {
+  font-size: 20rpx;
+  color: #999;
+  margin: 0 10rpx;
+}
+
+.match-time,
+.match-venue {
+  font-size: 22rpx;
+  color: #666;
+  margin-bottom: 6rpx;
+}
+
+.time-label,
+.venue-label {
+  color: #999;
+  margin-right: 8rpx;
+}
+
+.time-value,
+.venue-value {
+  color: #1AAD19;
+  font-weight: 500;
+}
+
+/* ===== 弹窗样式 ===== */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0);
+  z-index: 99;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.modal-overlay.show {
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal {
+  position: fixed;
+  bottom: -500rpx;
+  left: 0;
+  right: 0;
+  max-height: 80vh;
+  background: white;
+  border-radius: 20rpx 20rpx 0 0;
+  z-index: 100;
+  transition: bottom 0.3s;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal.show {
+  bottom: 0;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx;
+  border-bottom: 1rpx solid #eee;
+}
+
+.modal-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.modal-close {
+  font-size: 32rpx;
+  color: #999;
+}
+
+.modal-body {
+  flex: 1;
+  padding: 20rpx;
+  overflow-y: auto;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 10rpx;
+  padding: 20rpx;
+  border-top: 1rpx solid #eee;
+}
+
+.edit-section {
+  margin-bottom: 25rpx;
+}
+
+.section-label {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 12rpx;
+}
+
+.team-edit-row {
+  display: flex;
+  gap: 15rpx;
+}
+
+.team-edit-col {
+  flex: 1;
+}
+
+.team-label {
+  display: block;
+  font-size: 20rpx;
+  color: #666;
+  margin-bottom: 8rpx;
+}
+
+.team-selector {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12rpx 15rpx;
+  border: 1rpx solid #ddd;
+  border-radius: 8rpx;
+  background: white;
+}
+
+.selected-team {
+  font-size: 24rpx;
+  color: #333;
+}
+
+.arrow {
+  color: #999;
+}
+
+.time-slots-scroll {
+  white-space: nowrap;
+  margin-bottom: 15rpx;
+}
+
+.time-slot {
+  display: inline-block;
+  padding: 12rpx 16rpx;
+  margin-right: 8rpx;
+  border: 2rpx solid #ddd;
+  border-radius: 6rpx;
+  background: white;
+  font-size: 22rpx;
+  color: #666;
+  transition: all 0.3s;
+}
+
+.time-slot.selected {
+  border-color: #1AAD19;
+  background: #e6f7e6;
+  color: #1AAD19;
+}
+
+.venue-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+}
+
+.venue-btn {
+  flex: 0 0 calc(50% - 5rpx);
+  padding: 12rpx 15rpx;
+  border: 2rpx solid #ddd;
+  border-radius: 6rpx;
+  background: white;
+  font-size: 24rpx;
+  color: #666;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.venue-btn.selected {
+  border-color: #1AAD19;
+  background: #e6f7e6;
+  color: #1AAD19;
+}
+
+.team-picker-modal {
+  max-height: 60vh;
+}
+
+.team-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.team-item {
+  padding: 16rpx;
+  border-bottom: 1rpx solid #eee;
+  font-size: 24rpx;
+  color: #333;
+}
+
+.team-item:last-child {
+  border-bottom: none;
+}
+
+.form-item {
+  margin-bottom: 20rpx;
+}
+
+.label {
+  display: block;
+  font-size: 24rpx;
+  color: #333;
+  font-weight: 500;
+  margin-bottom: 8rpx;
+}
+
+.input {
+  width: 100%;
+  padding: 12rpx 15rpx;
+  border: 1rpx solid #ddd;
+  border-radius: 6rpx;
+  font-size: 24rpx;
+  box-sizing: border-box;
+}
+
+.textarea {
+  width: 100%;
+  padding: 12rpx 15rpx;
+  border: 1rpx solid #ddd;
+  border-radius: 6rpx;
+  font-size: 24rpx;
+  min-height: 100rpx;
+  box-sizing: border-box;
+}
+
+/* ===== 按钮样式 ===== */
+
+.btn-confirm,
+.btn-cancel {
+  flex: 1;
+  padding: 14rpx;
+  border: none;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
+.btn-confirm {
+  background: #1AAD19;
+  color: white;
+}
+
+.btn-confirm:active {
+  background: #15a814;
+}
+
+.btn-cancel {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.btn-cancel:active {
+  background: #e0e0e0;
+}
+
+.footer-actions {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 10rpx;
+  padding: 12rpx 15rpx;
+  background: white;
+  border-top: 1rpx solid #eee;
+  z-index: 50;
+}
+
+.btn {
+  flex: 1;
+  padding: 12rpx;
+  border: none;
+  border-radius: 6rpx;
+  font-size: 22rpx;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background: #1AAD19;
+  color: white;
+}
+
+.btn-secondary {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.btn-info {
+  background: #f0ad4e;
+  color: white;
+}
+
+.btn:active {
+  opacity: 0.8;
+}
+
+/* ===== 拖拽排序相关样式 ===== */
+
+.drag-handle {
+  font-size: 24rpx;
+  color: #ccc;
+  margin-right: 12rpx;
+  letter-spacing: 2rpx;
+}
+
+.match-card.dragging {
+  opacity: 0.4;
+  transform: scale(0.95);
+  border: 2rpx dashed #1AAD19;
+}
+
+.match-card.drop-target {
+  border: 2rpx solid #1AAD19;
+  background: #e6f7e6;
+  transform: scale(1.02);
+}
+
+.drag-ghost {
+  position: fixed;
+  width: 600rpx;
+  background: white;
+  border-radius: 12rpx;
+  padding: 16rpx 20rpx;
+  box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.2);
+  z-index: 200;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  border: 2rpx solid #1AAD19;
+}
+
+.drag-ghost.show {
+  opacity: 0.9;
+}
+
+.drag-ghost .match-teams {
+  margin-bottom: 8rpx;
+}
+
+.ghost-info {
+  font-size: 20rpx;
+  color: #666;
+  text-align: center;
+}
+
+.template-save-tip {
+  margin-top: 20rpx;
+  padding: 16rpx;
+  background: #f0f8ff;
+  border-radius: 8rpx;
+  font-size: 22rpx;
+  color: #666;
+  line-height: 1.5;
+}

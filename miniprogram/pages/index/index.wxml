@@ -5,6 +5,7 @@
     <text class="text">暂无赛事</text>
     <text class="text" style="margin-top: 10rpx; font-size: 26rpx;">点击下方按钮创建第一个赛事</text>
     <button class="btn-primary" style="margin-top: 40rpx; width: 60%;" bindtap="goCreate">创建赛事</button>
+    <button class="btn-secondary" style="margin-top: 16rpx; width: 60%;" bindtap="goTemplate">📋 使用模板创建</button>
   </view>
 
   <!-- 有赛事时的主页 -->
@@ -15,7 +16,7 @@
         <view>
           <view class="tournament-name">{{currentTournament.name}}</view>
           <view class="tournament-stage tag tag-green">
-            {{currentTournament.stage === 'group' ? '小组赛' : currentTournament.stage === 'semi' ? '半决赛' : currentTournament.stage === 'final' ? '决赛' : currentTournament.stage === 'placement' ? '排位赛' : currentTournament.stage === 'finished' ? '已结束' : '进行中'}}
+            {{currentStageText}}
           </view>
         </view>
         <view class="team-count">
@@ -39,7 +40,7 @@
           <text class="team-name away">{{item.awayTeamName}}</text>
         </view>
         <view class="match-meta">
-          <text class="tag tag-gray">{{item.stage === 'group' ? item.group + '组' : item.matchLabel || item.stage}}</text>
+          <text class="tag tag-gray">{{item.stageLabel}}</text>
         </view>
       </view>
     </view>
@@ -56,7 +57,7 @@
           <text class="team-name away">{{item.awayTeamName}}</text>
         </view>
         <view class="match-meta">
-          <text class="tag tag-blue">{{item.stage === 'group' ? item.group + '组' : item.matchLabel || item.stage}}</text>
+          <text class="tag tag-blue">{{item.stageLabel}}</text>
         </view>
       </view>
     </view>
@@ -69,12 +70,20 @@
               wx:for="{{tournaments}}" wx:key="id"
               bindtap="switchTournament" data-id="{{item.id}}">
           <text class="tournament-item-name">{{item.name}}</text>
-          <text class="tournament-item-count">{{item.teamCount}}队</text>
+          <view style="display: flex; align-items: center; gap: 16rpx;">
+            <text class="tournament-item-count">{{item.teamCount}}队</text>
+            <view class="tournament-delete-btn" catchtap="deleteTournament" data-id="{{item.id}}" data-name="{{item.name}}">
+              <text class="tournament-delete-icon">🗑</text>
+            </view>
+          </view>
         </view>
       </view>
     </view>
 
-    <!-- 新建赛事按钮 -->
-    <button class="btn-secondary" style="margin-top: 20rpx;" bindtap="goCreate">+ 新建赛事</button>
+    <!-- 操作按钮区 -->
+    <view style="display: flex; gap: 16rpx; margin-top: 20rpx; padding: 0 0rpx;">
+      <button class="btn-secondary" style="flex: 1;" bindtap="goCreate">+ 新建赛事</button>
+      <button class="btn-secondary" style="flex: 1;" bindtap="goTemplate">📋 模板库</button>
+    </view>
   </block>
 </view>

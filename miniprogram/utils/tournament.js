@@ -4,6 +4,7 @@
  */
 
 const STORAGE_KEY = 'FOOTBALL_TOURNAMENTS'
+const TEMPLATE_STORAGE_KEY = 'FOOTBALL_TEMPLATES'
 
 /**
  * 生成唯一 ID
@@ -41,6 +42,49 @@ function normalizeScheduleConfig(config) {
     groupMatchMinutes: config && config.groupMatchMinutes ? parseInt(config.groupMatchMinutes, 10) : 12,
     knockoutMatchMinutes: config && config.knockoutMatchMinutes ? parseInt(config.knockoutMatchMinutes, 10) : 20
   }
+}
+
+function normalizeTemplateConfig(templateConfig, teamCount) {
+  const raw = templateConfig || {}
+  const defaultGroupCount = teamCount >= 8 ? 2 : 2
+  const groupCount = raw.useGroups === false
+    ? 1
+    : Math.max(2, parseInt(raw.groupCount || defaultGroupCount, 10) || defaultGroupCount)
+  const legs = Math.max(1, parseInt(raw.legs || 2, 10) || 2)
+  const useGroups = raw.useGroups !== false
+  const enableKnockout = typeof raw.enableKnockout === 'boolean'
+    ? raw.enableKnockout
+    : useGroups
+
+  return {
+    id: raw.id || (useGroups ? 'group-knockout' : 'league-round-robin'),
+    name: raw.name || (useGroups ? '分组排位赛' : '单循环联赛'),
+    useGroups,
+    groupCount: useGroups ? groupCount : 1,
+    legs,
+    enableKnockout,
+    rankingMode: useGroups ? 'group' : 'overall'
+  }
+}
+
+function getTemplateRefText(ref) {
+  if (!ref || typeof ref !== 'object') return ''
+  if (ref.type === 'rank') {
+    const rank = parseInt(ref.rank, 10)
+    return Number.isFinite(rank) && rank > 0 ? `积分第${rank}` : '积分名次待定'
+  }
+  if (ref.type === 'winner') {
+    return ref.matchId != null ? `#${ref.matchId}胜者` : '胜者待定'
+  }
+  if (ref.type === 'loser') {
+    return ref.matchId != null ? `#${ref.matchId}败者` : '败者待定'
+  }
+  return ''
+}
+
+function buildGroupName(index) {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  return alphabet[index] || `G${index + 1}`
 }
 
 function getLatestScheduleMinute(tournament) {
@@ -160,6 +204,22 @@ function setCurrentTournament(id) {
 }
 
 /**
+ * 删除赛事
+ * @param {string} id - 要删除的赛事 ID
+ */
+function deleteTournament(id) {
+  const tournaments = getTournaments()
+  const remaining = tournaments.filter(t => t.id !== id)
+  saveTournaments(remaining)
+  // 若删除的是当前赛事，切换到其他赛事（或清空）
+  const currentId = wx.getStorageSync('CURRENT_TOURNAMENT_ID')
+  if (currentId === id) {
+    const next = remaining[0]
+    wx.setStorageSync('CURRENT_TOURNAMENT_ID', next ? next.id : '')
+  }
+}
+
+/**
  * 创建赛事
  * @param {string} name - 赛事名称
  * @param {Array} teams - 球队列表 [{name, players: [{name, number}]}]
@@ -174,6 +234,7 @@ function setCurrentTournament(id) {
  */
 function createTournament(name, teams, teamCount, preGroups, options) {
   const scheduleConfig = normalizeScheduleConfig(options && options.scheduleConfig)
+  const templateConfig = normalizeTemplateConfig(options && options.templateConfig, teamCount)
   const tournament = {
     id: generateId(),
     name,
@@ -189,20 +250,29 @@ function createTournament(name, teams, teamCount, preGroups, options) {
     })),
     groups: [],
     matches: [],
+    templateConfig,
     scheduleConfig,
     stage: 'group', // group, semi, third, final, finished
     createdAt: Date.now()
   }
 
-  // 分组：如果有预定义分组则使用，否则随机
-  if (preGroups) {
-    tournament.groups = [
-      { name: 'A', teams: preGroups.A.map(idx => tournament.teams[idx].id) },
-      { name: 'B', teams: preGroups.B.map(idx => tournament.teams[idx].id) }
-    ]
+  // 分组：如果有预定义分组则使用，否则按模板生成
+  if (templateConfig.useGroups && preGroups) {
+    const entries = Object.keys(preGroups)
+      .sort()
+      .map(groupName => ({
+        name: groupName,
+        teams: (preGroups[groupName] || []).map(idx => tournament.teams[idx].id)
+      }))
+      .filter(group => group.teams.length > 0)
+
+    tournament.groups = entries.length > 0
+      ? entries
+      : generateGroups(tournament.teams, teamCount, templateConfig)
   } else {
-    tournament.groups = generateGroups(tournament.teams, teamCount)
+    tournament.groups = generateGroups(tournament.teams, teamCount, templateConfig)
   }
+
   // 生成小组赛赛程
   tournament.matches = generateGroupMatches(tournament)
   applyStageSchedule(tournament, 'group', {
@@ -221,13 +291,30 @@ function createTournament(name, teams, teamCount, preGroups, options) {
  * 8队: A组4队 + B组4队
  * 10队: A组5队 + B组5队
  */
-function generateGroups(teams, teamCount) {
-  const half = teamCount / 2
+function generateGroups(teams, teamCount, templateConfig) {
+  const normalizedTemplate = normalizeTemplateConfig(templateConfig, teamCount)
+
+  if (!normalizedTemplate.useGroups) {
+    return [{ name: '总榜', teams: teams.slice(0, teamCount).map(t => t.id) }]
+  }
+
   const shuffled = [...teams].sort(() => Math.random() - 0.5)
-  return [
-    { name: 'A', teams: shuffled.slice(0, half).map(t => t.id) },
-    { name: 'B', teams: shuffled.slice(half, teamCount).map(t => t.id) }
-  ]
+  const groups = []
+  const groupCount = normalizedTemplate.groupCount
+  const baseSize = Math.floor(teamCount / groupCount)
+  const remainder = teamCount % groupCount
+  let cursor = 0
+
+  for (let i = 0; i < groupCount; i++) {
+    const size = baseSize + (i < remainder ? 1 : 0)
+    groups.push({
+      name: buildGroupName(i),
+      teams: shuffled.slice(cursor, cursor + size).map(t => t.id)
+    })
+    cursor += size
+  }
+
+  return groups.filter(group => group.teams.length > 0)
 }
 
 /**
@@ -235,62 +322,41 @@ function generateGroups(teams, teamCount) {
  */
 function generateGroupMatches(tournament) {
   const matches = []
+  const legs = tournament.templateConfig && tournament.templateConfig.legs
+    ? tournament.templateConfig.legs
+    : 2
 
   tournament.groups.forEach(group => {
     const firstLegRounds = buildRoundRobinRounds(group.teams)
-    const firstLegCount = firstLegRounds.length
+    const roundsPerLeg = firstLegRounds.length
 
-    // 第一循环
-    firstLegRounds.forEach((roundPairs, roundIndex) => {
-      roundPairs.forEach(pair => {
-        matches.push({
-          id: generateId(),
-          stage: 'group',
-          group: group.name,
-          round: roundIndex + 1,
-          homeTeam: pair.homeTeam,
-          awayTeam: pair.awayTeam,
-          homeScore: null,
-          awayScore: null,
-          events: [],
-          status: 'pending', // pending, playing, finished
-          startTime: null,
-          venueId: null,
-          venueName: '',
-          startMinute: null,
-          endMinute: null,
-          startTimeText: '',
-          endTimeText: '',
-          lockedSchedule: false
+    for (let legIndex = 0; legIndex < legs; legIndex++) {
+      firstLegRounds.forEach((roundPairs, roundIndex) => {
+        roundPairs.forEach(pair => {
+          const reverseHost = legIndex % 2 === 1
+          matches.push({
+            id: generateId(),
+            stage: 'group',
+            group: group.name,
+            round: legIndex * roundsPerLeg + roundIndex + 1,
+            homeTeam: reverseHost ? pair.awayTeam : pair.homeTeam,
+            awayTeam: reverseHost ? pair.homeTeam : pair.awayTeam,
+            homeScore: null,
+            awayScore: null,
+            events: [],
+            status: 'pending',
+            startTime: null,
+            venueId: null,
+            venueName: '',
+            startMinute: null,
+            endMinute: null,
+            startTimeText: '',
+            endTimeText: '',
+            lockedSchedule: false
+          })
         })
       })
-    })
-
-    // 第二循环（反转主客）
-    firstLegRounds.forEach((roundPairs, roundIndex) => {
-      roundPairs.forEach(pair => {
-        matches.push({
-          id: generateId(),
-          stage: 'group',
-          group: group.name,
-          round: firstLegCount + roundIndex + 1,
-          homeTeam: pair.awayTeam,
-          awayTeam: pair.homeTeam,
-          homeScore: null,
-          awayScore: null,
-          events: [],
-          status: 'pending',
-          startTime: null,
-          venueId: null,
-          venueName: '',
-          startMinute: null,
-          endMinute: null,
-          startTimeText: '',
-          endTimeText: '',
-          lockedSchedule: false
-        })
-      })
-    })
+    }
   })
 
   // 同轮次聚合后再按轮次排序
@@ -487,6 +553,10 @@ function resolveMatchWinnerTeamId(match) {
  * 10队：直接进行1-2、3-4、5-6、7-8、9-10排位赛
  */
 function generateKnockoutMatches(tournament) {
+  if (!tournament.templateConfig || !tournament.templateConfig.enableKnockout) {
+    return tournament
+  }
+
   const existingPlacement = (tournament.matches || []).some(m => m.stage !== 'group')
   if (existingPlacement) return tournament
 
@@ -878,7 +948,11 @@ function finishMatch(tournamentId, matchId, finishData) {
 
   // 检查阶段变化
   if (match.stage === 'group' && isGroupStageComplete(tournament)) {
-    generateKnockoutMatches(tournament)
+    if (tournament.templateConfig && tournament.templateConfig.enableKnockout) {
+      generateKnockoutMatches(tournament)
+    } else {
+      tournament.stage = 'finished'
+    }
   } else if (match.stage === 'semi') {
     const semiMatches = tournament.matches.filter(m => m.stage === 'semi')
     if (semiMatches.every(m => m.status === 'finished')) {
@@ -983,6 +1057,336 @@ function getTeamName(tournament, teamId) {
   return team ? team.name : '未知'
 }
 
+/**
+ * ==================== 模板管理 ====================
+ */
+
+/**
+ * 获取所有模板
+ */
+function getTemplates() {
+  return wx.getStorageSync(TEMPLATE_STORAGE_KEY) || []
+}
+
+/**
+ * 获取单个模板
+ */
+function getTemplate(templateId) {
+  const templates = getTemplates()
+  return templates.find(t => t.id === templateId) || null
+}
+
+/**
+ * 保存/更新模板
+ */
+function saveTemplate(template) {
+  const templates = getTemplates()
+  const idx = templates.findIndex(t => t.id === template.id)
+  if (idx >= 0) {
+    templates[idx] = {
+      ...templates[idx],
+      ...template,
+      id: templates[idx].id,
+      createdAt: template.createdAt || templates[idx].createdAt || Date.now(),
+      updatedAt: Date.now()
+    }
+  } else {
+    templates.push({
+      ...template,
+      id: template.id || generateId(),
+      createdAt: template.createdAt || Date.now(),
+      updatedAt: Date.now()
+    })
+  }
+  wx.setStorageSync(TEMPLATE_STORAGE_KEY, templates)
+}
+
+/**
+ * 删除模板
+ */
+function deleteTemplate(templateId) {
+  const templates = getTemplates()
+  const idx = templates.findIndex(t => t.id === templateId)
+  if (idx >= 0) {
+    templates.splice(idx, 1)
+    wx.setStorageSync(TEMPLATE_STORAGE_KEY, templates)
+    return true
+  }
+  return false
+}
+
+/**
+ * 从当前赛事创建模板
+ * 将赛事的场地、时间、赛制配置以及比赛编排保存为可复用模板
+ */
+function createTemplateFromTournament(tournament, templateName, templateDesc) {
+  // 提取比赛编排槽位信息（用位置索引替代具体球队ID）
+  const teamIdToSlot = {}
+  ;(tournament.teams || []).forEach((team, idx) => {
+    teamIdToSlot[team.id] = idx
+  })
+
+  const matchSlots = (tournament.matches || [])
+    .filter(m => m.stage === 'group')
+    .map(m => ({
+      stage: m.stage,
+      group: m.group,
+      round: m.round,
+      homeSlot: typeof teamIdToSlot[m.homeTeam] === 'number' ? teamIdToSlot[m.homeTeam] : null,
+      awaySlot: typeof teamIdToSlot[m.awayTeam] === 'number' ? teamIdToSlot[m.awayTeam] : null,
+      venueId: m.venueId || null,
+      venueName: m.venueName || '',
+      startMinute: m.startMinute != null ? m.startMinute : null,
+      endMinute: m.endMinute != null ? m.endMinute : null,
+      startTimeText: m.startTimeText || '',
+      endTimeText: m.endTimeText || ''
+    }))
+
+  const template = {
+    id: generateId(),
+    name: templateName,
+    description: templateDesc || '',
+    teamCount: tournament.teamCount || (tournament.teams || []).length,
+    venues: tournament.scheduleConfig.venues,
+    scheduleConfig: {
+      startTime: tournament.scheduleConfig.startTime,
+      breakMinutes: tournament.scheduleConfig.breakMinutes,
+      groupMatchMinutes: tournament.scheduleConfig.groupMatchMinutes,
+      knockoutMatchMinutes: tournament.scheduleConfig.knockoutMatchMinutes
+    },
+    templateConfig: tournament.templateConfig,
+    matchSlots: matchSlots,
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  }
+  saveTemplate(template)
+  return template
+}
+
+/**
+ * 从模板创建赛事
+ * @param {string} templateId - 模板ID
+ * @param {string} name - 赛事名称
+ * @param {Array} teams - 球队列表
+ * @param {number} teamCount - 队伍数量
+ * @param {Object} preGroups - 预分组（可选）
+ * @returns {Object} 新创建的赛事
+ */
+function createTournamentFromTemplate(templateId, name, teams, teamCount, preGroups, venueOverrides) {
+  const template = getTemplate(templateId)
+  if (!template) {
+    throw new Error(`Template ${templateId} not found`)
+  }
+
+  // 使用场地覆盖或模板默认值
+  const venues = venueOverrides && venueOverrides.length > 0
+    ? venueOverrides
+    : template.venues.map(v => v.name)
+
+  // 使用模板的配置创建赛事
+  const options = {
+    scheduleConfig: {
+      venues: venues,
+      startTime: template.scheduleConfig.startTime,
+      breakMinutes: template.scheduleConfig.breakMinutes,
+      groupMatchMinutes: template.scheduleConfig.groupMatchMinutes,
+      knockoutMatchMinutes: template.scheduleConfig.knockoutMatchMinutes
+    },
+    templateConfig: template.templateConfig
+  }
+
+  const tourn = createTournament(name, teams, teamCount, preGroups, options)
+
+  // 如果模板有保存的编排槽位，应用到新赛事
+  if (template.matchSlots && template.matchSlots.length > 0) {
+    applyTemplateMatchSlots(tourn, template.matchSlots)
+  }
+
+  return tourn
+}
+
+/**
+ * 将模板中保存的编排槽位应用到赛事比赛
+ * matchSlots 中的 homeSlot/awaySlot 是球队在 teams 数组中的位置索引
+ * venueIndex 是场地在赛事 venues 数组中的位置索引
+ */
+function applyTemplateMatchSlots(tourn, matchSlots) {
+  // 清除原有自动生成的比赛，按模板重新生成（包含小组赛和排位赛）
+  const venues = tourn.scheduleConfig.venues
+
+  // 模板编排应完全接管赛程
+  tourn.matches = []
+
+  matchSlots.forEach(slot => {
+    const stage = slot.stage || 'group'
+    let homeTeam = null
+    let awayTeam = null
+    let homeRefText = ''
+    let awayRefText = ''
+
+    if (stage === 'group') {
+      homeTeam = slot.homeSlot != null && slot.homeSlot < tourn.teams.length
+        ? tourn.teams[slot.homeSlot].id
+        : null
+      awayTeam = slot.awaySlot != null && slot.awaySlot < tourn.teams.length
+        ? tourn.teams[slot.awaySlot].id
+        : null
+    } else {
+      homeRefText = getTemplateRefText(slot.homeRef)
+      awayRefText = getTemplateRefText(slot.awayRef)
+    }
+
+    // 场地：优先用 venueIndex 映射到实际场地
+    const venueIdx = slot.venueIndex != null ? slot.venueIndex : 0
+    const venue = venues[venueIdx] || venues[0] || { id: 'venue_1', name: '场地1' }
+
+    tourn.matches.push({
+      id: generateId(),
+      templateMatchId: slot.matchId,
+      stage,
+      group: slot.group || null,
+      round: slot.round || 1,
+      homeTeam: homeTeam,
+      awayTeam: awayTeam,
+      homeRef: stage === 'knockout' ? slot.homeRef : null,
+      awayRef: stage === 'knockout' ? slot.awayRef : null,
+      homeRefText,
+      awayRefText,
+      matchLabel: stage === 'knockout'
+        ? ((slot.matchLabel || '').trim() || (slot.matchId != null ? `排位赛#${slot.matchId}` : '排位赛'))
+        : '',
+      homeScore: null,
+      awayScore: null,
+      events: [],
+      status: 'pending',
+      startTime: null,
+      venueId: venue.id,
+      venueName: venue.name,
+      startMinute: slot.startMinute,
+      endMinute: slot.endMinute,
+      startTimeText: slot.startTimeText || formatMinutes(slot.startMinute),
+      endTimeText: slot.endTimeText || formatMinutes(slot.endMinute),
+      lockedSchedule: true
+    })
+  })
+
+  saveTournament(tourn)
+}
+
+/**
+ * 直接创建模板（无需先创建赛事）
+ * @param {Object} params
+ * @param {string} params.name - 模板名称
+ * @param {string} params.description - 模板描述
+ * @param {number} params.teamCount - 队伍数量
+ * @param {number} params.venueCount - 场地数量
+ * @param {Object} params.scheduleConfig - 时间配置
+ * @param {Object} params.templateConfig - 赛制配置
+ * @param {Array} params.matchSlots - 编排槽位
+ */
+function createTemplateDirectly(params) {
+  const venueCount = params.venueCount || 2
+  const venues = []
+  for (let i = 0; i < venueCount; i++) {
+    venues.push({ id: `venue_${i + 1}`, name: `场地${i + 1}` })
+  }
+
+  const template = {
+    id: params.id || generateId(),
+    name: params.name,
+    description: params.description || '',
+    teamCount: params.teamCount,
+    venueCount: venueCount,
+    venues: venues,
+    scheduleConfig: params.scheduleConfig || {
+      startTime: '09:00',
+      breakMinutes: 3,
+      groupMatchMinutes: 20,
+      knockoutMatchMinutes: 20
+    },
+    templateConfig: params.templateConfig || {
+      useGroups: false,
+      groupCount: 1,
+      legs: 1,
+      enableKnockout: false
+    },
+    matchSlots: (params.matchSlots || []).map(slot => {
+      // 确保每个 slot 的新字段被保存
+      const saved = {
+        matchId: slot.matchId,
+        stage: slot.stage || 'group',
+        round: slot.round || 1,
+        matchLabel: slot.matchLabel || '',
+        venueIndex: slot.venueIndex,
+        startMinute: slot.startMinute,
+        endMinute: slot.endMinute,
+        startTimeText: slot.startTimeText,
+        endTimeText: slot.endTimeText,
+        durationMinutes: slot.durationMinutes
+      }
+      if (slot.stage === 'knockout') {
+        saved.homeRef = slot.homeRef
+        saved.awayRef = slot.awayRef
+      } else {
+        saved.homeSlot = slot.homeSlot
+        saved.awaySlot = slot.awaySlot
+      }
+      return saved
+    }),
+    createdAt: params.createdAt || Date.now(),
+    updatedAt: Date.now()
+  }
+  saveTemplate(template)
+  return template
+}
+
+/**
+ * 根据队伍数量和场地数量生成默认的编排槽位（单循环）
+ */
+function generateDefaultMatchSlots(teamCount, venueCount, scheduleConfig) {
+  const teams = []
+  for (let i = 0; i < teamCount; i++) {
+    teams.push(i) // 0-based slot index
+  }
+
+  // 生成单循环对阵
+  const pairs = []
+  for (let i = 0; i < teamCount; i++) {
+    for (let j = i + 1; j < teamCount; j++) {
+      pairs.push({ homeSlot: i, awaySlot: j })
+    }
+  }
+
+  const duration = (scheduleConfig && scheduleConfig.groupMatchMinutes) || 20
+  const breakMin = (scheduleConfig && scheduleConfig.breakMinutes) || 3
+  const startTime = (scheduleConfig && scheduleConfig.startTime) || '09:00'
+  const startMinuteBase = parseTimeToMinutes(startTime)
+
+  const slots = []
+  let cursor = startMinuteBase
+
+  // 按场地数量分配时间：每个时间段可以并行 venueCount 场比赛
+  for (let i = 0; i < pairs.length; i += venueCount) {
+    const batch = pairs.slice(i, i + venueCount)
+    batch.forEach((pair, idx) => {
+      const venueIdx = idx % venueCount
+      slots.push({
+        homeSlot: pair.homeSlot,
+        awaySlot: pair.awaySlot,
+        venueIndex: venueIdx,
+        startMinute: cursor,
+        endMinute: cursor + duration,
+        startTimeText: formatMinutes(cursor),
+        endTimeText: formatMinutes(cursor + duration),
+        durationMinutes: duration
+      })
+    })
+    cursor += duration + breakMin
+  }
+
+  return slots
+}
+
 module.exports = {
   generateId,
   getTournaments,
@@ -990,6 +1394,7 @@ module.exports = {
   saveTournament,
   saveTournaments,
   setCurrentTournament,
+  deleteTournament,
   createTournament,
   calculateGroupStandings,
   isGroupStageComplete,
@@ -1003,5 +1408,14 @@ module.exports = {
   updatePlayerDisplayName,
   getTopScorers,
   getDisciplineStats,
-  getTeamName
+  getTeamName,
+  // 模板管理
+  getTemplates,
+  getTemplate,
+  saveTemplate,
+  deleteTemplate,
+  createTemplateDirectly,
+  generateDefaultMatchSlots,
+  createTemplateFromTournament,
+  createTournamentFromTemplate
 }

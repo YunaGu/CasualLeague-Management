@@ -1,0 +1,162 @@
+<view class="container">
+  <!-- ===== 顶部标题栏 ===== -->
+  <view class="header">
+    <view class="title">模板库</view>
+    <view class="subtitle">创建和管理可复用的比赛编排模板</view>
+  </view>
+
+  <!-- ===== 创建模板入口 ===== -->
+  <view class="create-entry" bindtap="goCreateTemplate">
+    <view class="create-icon">＋</view>
+    <view class="create-text">
+      <text class="create-title">创建新模板</text>
+      <text class="create-desc">设置场地和球队数量，拖拽编排比赛顺序</text>
+    </view>
+  </view>
+
+  <!-- ===== 如果模板列表为空 ===== -->
+  <view class="empty-state" wx:if="{{templates.length === 0}}">
+    <view class="empty-icon">📋</view>
+    <text class="empty-title">还没有保存的模板</text>
+    <text class="empty-desc">点击上方「创建新模板」，设置场地和队伍数量后编排比赛，保存后下次直接使用</text>
+  </view>
+
+  <!-- ===== 模板列表 ===== -->
+  <view class="templates-section" wx:if="{{templates.length > 0}}">
+    <view class="section-header">
+      <text class="section-title">已保存的模板（{{templates.length}}）</text>
+    </view>
+
+    <view class="template-list">
+      <view 
+        class="template-card"
+        wx:for="{{templates}}"
+        wx:key="id"
+        bindtap="selectTemplate"
+        data-template-id="{{item.id}}"
+      >
+        <view class="template-header">
+          <view class="template-name">{{item.name}}</view>
+          <view class="template-actions">
+            <text
+              class="action-btn edit-btn"
+              bindtap="editTemplate"
+              data-template-id="{{item.id}}"
+              catchbubble
+            >✏️</text>
+            <text 
+              class="action-btn copy-btn"
+              bindtap="exportTemplate"
+              data-template-id="{{item.id}}"
+              catchbubble
+            >📋</text>
+            <text 
+              class="action-btn delete-btn"
+              bindtap="showDeleteConfirm"
+              data-template-id="{{item.id}}"
+              catchbubble
+            >🗑️</text>
+          </view>
+        </view>
+
+        <view class="template-desc">{{item.description || '暂无描述'}}</view>
+
+        <view class="template-info">
+          <view class="info-item">
+            <text class="info-label">赛制</text>
+            <text class="info-value">{{getTemplateInfo(item).useGroups}}</text>
+          </view>
+          <view class="info-item">
+            <text class="info-label">球队</text>
+            <text class="info-value">{{item.teamCount || '--'}}支</text>
+          </view>
+          <view class="info-item">
+            <text class="info-label">场地</text>
+            <text class="info-value">{{getTemplateInfo(item).venues}}个</text>
+          </view>
+          <view class="info-item">
+            <text class="info-label">编排</text>
+            <text class="info-value {{item.matchSlots && item.matchSlots.length > 0 ? 'has-slots' : ''}}">{{item.matchSlots && item.matchSlots.length > 0 ? item.matchSlots.length + '场' : '无'}}</text>
+          </view>
+        </view>
+
+        <view class="template-meta">
+          <text class="meta-text">创建于 {{item.createdAt ? formatDate(item.createdAt) : '--'}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ===== 预览弹窗 ===== -->
+  <view class="modal-overlay {{showPreviewModal ? 'show' : ''}}" bindtap="closePreviewModal"></view>
+  <view class="modal {{showPreviewModal ? 'show' : ''}}">
+    <view class="modal-header">
+      <text class="modal-title">使用模板</text>
+      <text class="modal-close" bindtap="closePreviewModal">✕</text>
+    </view>
+
+    <view class="modal-body">
+      <view class="preview-section" wx:if="{{selectedTemplate}}">
+        <view class="preview-item">
+          <text class="preview-label">模板名称</text>
+          <text class="preview-value">{{selectedTemplate.name || '--'}}</text>
+        </view>
+        <view class="preview-item">
+          <text class="preview-label">赛制</text>
+          <text class="preview-value">{{previewInfo.useGroups}}</text>
+        </view>
+        <view class="preview-item">
+          <text class="preview-label">球队数量</text>
+          <text class="preview-value">{{selectedTemplate.teamCount || '--'}}支</text>
+        </view>
+        <view class="preview-item">
+          <text class="preview-label">场地数量</text>
+          <text class="preview-value">{{previewInfo.venues}}个</text>
+        </view>
+        <view class="preview-item">
+          <text class="preview-label">开始时间</text>
+          <text class="preview-value">{{previewInfo.startTime}}</text>
+        </view>
+        <view class="preview-item">
+          <text class="preview-label">单场时长</text>
+          <text class="preview-value">{{previewInfo.matchDuration}}分钟</text>
+        </view>
+        <view class="preview-item">
+          <text class="preview-label">场间间隔</text>
+          <text class="preview-value">{{previewInfo.breakTime}}分钟</text>
+        </view>
+        <view class="preview-item">
+          <text class="preview-label">已保存编排</text>
+          <text class="preview-value">{{previewInfo.slotsText}}</text>
+        </view>
+      </view>
+
+      <view class="help-text">
+        <text>使用此模板后，只需输入球队名称，系统会自动根据模板安排赛程（对阵、场地、时间）。</text>
+      </view>
+    </view>
+
+    <view class="modal-footer">
+      <button class="btn-cancel" bindtap="closePreviewModal">取消</button>
+      <button class="btn-confirm" bindtap="useTemplate">使用此模板</button>
+    </view>
+  </view>
+
+  <!-- ===== 删除确认弹窗 ===== -->
+  <view class="modal-overlay {{showDeleteConfirm ? 'show' : ''}}" bindtap="closeDeleteConfirm"></view>
+  <view class="modal {{showDeleteConfirm ? 'show' : ''}}">
+    <view class="modal-header">
+      <text class="modal-title">确认删除</text>
+      <text class="modal-close" bindtap="closeDeleteConfirm">✕</text>
+    </view>
+
+    <view class="modal-body">
+      <text class="confirm-text">确定要删除此模板吗？删除后无法恢复。</text>
+    </view>
+
+    <view class="modal-footer">
+      <button class="btn-cancel" bindtap="closeDeleteConfirm">取消</button>
+      <button class="btn-confirm delete" bindtap="confirmDelete">删除</button>
+    </view>
+  </view>
+</view>

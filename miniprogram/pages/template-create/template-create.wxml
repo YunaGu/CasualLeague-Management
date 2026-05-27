@@ -1,0 +1,524 @@
+<view class="container">
+  <!-- ===== 步骤1：基本配置 ===== -->
+  <block wx:if="{{step === 1}}">
+    <view class="header">
+      <view class="title">{{isEditMode ? '编辑比赛模板' : '创建比赛模板'}}</view>
+      <view class="subtitle">第1步：设置基本参数</view>
+    </view>
+
+    <view class="card">
+      <view class="section-title">参赛队伍数量</view>
+      <picker mode="selector" range="{{teamCountOptions}}" value="{{teamCountIndex}}" bindchange="onTeamCountChange">
+        <view class="picker-value">
+          <text>{{teamCount}} 支球队</text>
+          <text class="arrow">▼</text>
+        </view>
+      </picker>
+    </view>
+
+    <view class="card">
+      <view class="section-title">场地数量</view>
+      <picker mode="selector" range="{{venueCountOptions}}" value="{{venueCountIndex}}" bindchange="onVenueCountChange">
+        <view class="picker-value">
+          <text>{{venueCount}} 个场地</text>
+          <text class="arrow">▼</text>
+        </view>
+      </picker>
+    </view>
+
+    <view class="card">
+      <view class="section-title">时间配置</view>
+      <view class="config-row">
+        <view class="config-col">
+          <view class="config-label">开始时间</view>
+          <input class="input" placeholder="09:00" value="{{startTime}}" bindinput="onStartTimeInput" />
+        </view>
+        <view class="config-col">
+          <view class="config-label">每场时长(分钟)</view>
+          <input class="input" type="number" value="{{matchDuration}}" bindinput="onDurationInput" />
+        </view>
+      </view>
+      <view class="config-row">
+        <view class="config-col">
+          <view class="config-label">场间间隔(分钟)</view>
+          <input class="input" type="number" value="{{breakMinutes}}" bindinput="onBreakInput" />
+        </view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="section-title">是否分组</view>
+      <picker mode="selector" range="{{['是', '否']}}" value="{{useGroups ? 0 : 1}}" bindchange="onUseGroupsChange">
+        <view class="picker-value">
+          <text>{{useGroups ? '是（分组对抗）' : '否（不分组）'}}</text>
+          <text class="arrow">▼</text>
+        </view>
+      </picker>
+      <block wx:if="{{useGroups}}">
+        <view class="config-row" style="margin-top: 16rpx;">
+          <view class="config-col">
+            <view class="config-label">分组数量</view>
+            <input class="input" type="number" value="{{groupCount}}" bindinput="onGroupCountInput" />
+          </view>
+        </view>
+      </block>
+    </view>
+
+    <view class="tip-box">
+      <text>进入下一步后可自由添加小组赛和排位赛，每场比赛带唯一编号。</text>
+    </view>
+
+    <button class="btn-primary full-btn" bindtap="goToArrange">下一步：编排比赛</button>
+  </block>
+
+  <!-- ===== 步骤2：拖拽编排 ===== -->
+  <block wx:if="{{step === 2}}">
+    <view class="header">
+      <view class="title">编排比赛</view>
+      <view class="subtitle">{{matchSlots.length > 0 ? matchSlots.length + '场比赛 · 长按拖拽调整顺序 · 点击修改详情' : '点击下方按钮添加比赛'}}</view>
+    </view>
+
+    <view class="slot-list">
+      <view
+        class="slot-card {{dragIndex === index ? 'dragging' : ''}} {{dropTargetIndex === index ? 'drop-target' : ''}}"
+        wx:for="{{matchSlots}}"
+        wx:key="matchId"
+        data-index="{{index}}"
+        bindtap="editSlot"
+        bindlongpress="onDragStart"
+        bindtouchmove="onTouchMove"
+        bindtouchend="onTouchEnd"
+      >
+        <view class="slot-order">
+          <text class="slot-id">#{{item.matchId}}</text>
+        </view>
+        <view class="slot-content">
+          <view class="slot-stage-badge {{item.stage === 'knockout' ? 'knockout' : 'group'}}">
+            <text wx:if="{{item.stage === 'group'}}">小组赛·第{{item.round}}轮</text>
+            <text wx:else>排位赛·第{{item.round}}轮</text>
+          </view>
+          <view class="slot-teams">
+            <!-- 小组赛：显示队伍编号 -->
+            <block wx:if="{{item.stage === 'group'}}">
+              <text class="slot-team home">{{item.homeLabel || '队伍' + (item.homeSlot + 1)}}</text>
+              <text class="slot-vs">VS</text>
+              <text class="slot-team away">{{item.awayLabel || '队伍' + (item.awaySlot + 1)}}</text>
+            </block>
+            <!-- 排位赛：显示引用 -->
+            <block wx:else>
+              <text class="slot-team home">
+                <block wx:if="{{item.homeRef.type === 'rank'}}">第{{item.homeRef.rank}}名</block>
+                <block wx:elif="{{item.homeRef.type === 'winner'}}">#{{item.homeRef.matchId}}胜者</block>
+                <block wx:else>#{{item.homeRef.matchId}}败者</block>
+              </text>
+              <text class="slot-vs">VS</text>
+              <text class="slot-team away">
+                <block wx:if="{{item.awayRef.type === 'rank'}}">第{{item.awayRef.rank}}名</block>
+                <block wx:elif="{{item.awayRef.type === 'winner'}}">#{{item.awayRef.matchId}}胜者</block>
+                <block wx:else>#{{item.awayRef.matchId}}败者</block>
+              </text>
+            </block>
+          </view>
+          <view class="slot-meta">
+            <text class="slot-venue">场地{{item.venueIndex + 1}}</text>
+            <text class="slot-time">{{item.startTimeText}}-{{item.endTimeText}}</text>
+          </view>
+        </view>
+        <view class="slot-delete" catchtap="deleteSlot" data-index="{{index}}">×</view>
+      </view>
+    </view>
+
+    <!-- 拖拽浮层 -->
+    <view
+      class="drag-ghost {{isDragging ? 'show' : ''}}"
+      style="top: {{dragGhostTop}}px; left: {{dragGhostLeft}}px;"
+      wx:if="{{isDragging && dragIndex >= 0}}"
+    >
+      <text class="ghost-text">#{{matchSlots[dragIndex].matchId}}</text>
+    </view>
+
+    <view class="arrange-actions">
+      <button class="btn-add" bindtap="addSlot">+ 添加比赛</button>
+    </view>
+
+    <view class="step-buttons">
+      <button class="btn-secondary" bindtap="goBackStep">上一步</button>
+      <button class="btn-primary" bindtap="goToSave">下一步：保存模板</button>
+    </view>
+  </block>
+
+  <!-- ===== 步骤3：保存 ===== -->
+  <block wx:if="{{step === 3}}">
+    <view class="header">
+      <view class="title">{{isEditMode ? '更新模板' : '保存模板'}}</view>
+      <view class="subtitle">{{isEditMode ? '确认修改后覆盖原模板' : '给模板起个名字，方便下次快速使用'}}</view>
+    </view>
+
+    <view class="card">
+      <view class="section-title">模板名称</view>
+      <input class="input" placeholder="例如：6队2场地周末赛" value="{{templateName}}" bindinput="onTemplateNameInput" />
+    </view>
+
+    <view class="card">
+      <view class="section-title">描述（可选）</view>
+      <textarea class="textarea" placeholder="例如：20分钟一场，2个场地并行" value="{{templateDesc}}" bindinput="onTemplateDescInput" auto-height />
+    </view>
+
+    <view class="card summary-card">
+      <view class="section-title">模板概览</view>
+      <view class="summary-row">
+        <text class="summary-label">球队数量</text>
+        <text class="summary-value">{{teamCount}} 支</text>
+      </view>
+      <view class="summary-row">
+        <text class="summary-label">场地数量</text>
+        <text class="summary-value">{{venueCount}} 个</text>
+      </view>
+      <view class="summary-row">
+        <text class="summary-label">比赛场数</text>
+        <text class="summary-value">{{matchSlots.length}} 场</text>
+      </view>
+      <view class="summary-row">
+        <text class="summary-label">每场时长</text>
+        <text class="summary-value">{{matchDuration}} 分钟</text>
+      </view>
+      <view class="summary-row">
+        <text class="summary-label">开始时间</text>
+        <text class="summary-value">{{startTime}}</text>
+      </view>
+    </view>
+
+    <view class="step-buttons">
+      <button class="btn-secondary" bindtap="goBackStep">上一步</button>
+      <button class="btn-primary" bindtap="saveTemplate">{{isEditMode ? '更新模板' : '保存模板'}}</button>
+    </view>
+  </block>
+
+  <!-- ===== 编辑比赛弹窗 ===== -->
+  <block wx:if="{{showEditModal}}">
+  <view class="modal-overlay show" bindtap="closeEditModal"></view>
+  <view class="modal show">
+    <view class="modal-header">
+      <text class="modal-title">编辑 #{{matchSlots[editingIndex].matchId}} 比赛</text>
+      <text class="modal-close" bindtap="closeEditModal">✕</text>
+    </view>
+
+    <view class="modal-body">
+      <!-- 比赛阶段 -->
+      <view class="edit-section">
+        <view class="edit-label">比赛阶段</view>
+        <picker mode="selector" range="{{['小组赛', '排位赛']}}" value="{{editStage === 'group' ? 0 : 1}}" bindchange="onEditStageChange">
+          <view class="picker-value">
+            <text>{{editStage === 'group' ? '小组赛' : '排位赛'}}</text>
+            <text class="arrow">▼</text>
+          </view>
+        </picker>
+      </view>
+
+      <!-- 小组赛：轮次 + 队伍选择 -->
+      <block wx:if="{{editStage === 'group'}}">
+        <view class="edit-section">
+          <view class="edit-label">轮次</view>
+          <input class="input" type="number" value="{{editRound}}" bindinput="onEditRoundInput" placeholder="第几轮" />
+        </view>
+
+        <!-- 分组模式：先选组，再从组内选队伍 -->
+        <block wx:if="{{useGroups}}">
+          <view class="edit-section">
+            <view class="edit-label">分组</view>
+            <picker mode="selector" range="{{groupOptions}}" value="{{editGroup}}" bindchange="onEditGroupChange">
+              <view class="picker-value">
+                <text>{{groupOptions[editGroup]}}</text>
+                <text class="arrow">▼</text>
+              </view>
+            </picker>
+          </view>
+
+          <view class="edit-section">
+            <view class="edit-label">主队</view>
+            <picker mode="selector" range="{{groupTeamOptions}}" value="{{editHomeSlot - groupTeamSlots[0]}}" bindchange="onEditHomeChange">
+              <view class="picker-value">
+                <text>{{groupTeamOptions[editHomeSlot - groupTeamSlots[0]]}}</text>
+                <text class="arrow">▼</text>
+              </view>
+            </picker>
+          </view>
+
+          <view class="edit-section">
+            <view class="edit-label">客队</view>
+            <picker mode="selector" range="{{groupTeamOptions}}" value="{{editAwaySlot - groupTeamSlots[0]}}" bindchange="onEditAwayChange">
+              <view class="picker-value">
+                <text>{{groupTeamOptions[editAwaySlot - groupTeamSlots[0]]}}</text>
+                <text class="arrow">▼</text>
+              </view>
+            </picker>
+          </view>
+        </block>
+
+        <!-- 非分组模式：从所有队伍中选择 -->
+        <block wx:else>
+          <view class="edit-section">
+            <view class="edit-label">主队</view>
+            <picker mode="selector" range="{{teamSlotOptions}}" value="{{editHomeSlot}}" bindchange="onEditHomeChange">
+              <view class="picker-value">
+                <text>队伍{{editHomeSlot + 1}}</text>
+                <text class="arrow">▼</text>
+              </view>
+            </picker>
+          </view>
+
+          <view class="edit-section">
+            <view class="edit-label">客队</view>
+            <picker mode="selector" range="{{teamSlotOptions}}" value="{{editAwaySlot}}" bindchange="onEditAwayChange">
+              <view class="picker-value">
+                <text>队伍{{editAwaySlot + 1}}</text>
+                <text class="arrow">▼</text>
+              </view>
+            </picker>
+          </view>
+        </block>
+      </block>
+
+      <!-- 排位赛：轮次 + 引用选择 -->
+      <block wx:if="{{editStage === 'knockout'}}">
+        <view class="edit-section">
+          <view class="edit-label">轮次</view>
+          <input class="input" type="number" value="{{editRound}}" bindinput="onEditRoundInput" placeholder="第几轮" />
+        </view>
+
+        <view class="edit-section">
+          <view class="edit-label">比赛名称</view>
+          <input class="input" value="{{editMatchLabel}}" bindinput="onEditMatchLabelInput" placeholder="例如：半决赛第一场" />
+        </view>
+
+        <!-- 主队引用 -->
+        <view class="edit-section">
+          <view class="edit-label">主队来源</view>
+          <picker mode="selector" range="{{refTypeOptions}}" value="{{editHomeRefType === 'rank' ? 0 : (editHomeRefType === 'winner' ? 1 : 2)}}" bindchange="onEditHomeRefTypeChange">
+            <view class="picker-value">
+              <text>{{editHomeRefType === 'rank' ? '排名引用' : (editHomeRefType === 'winner' ? '胜者引用' : '败者引用')}}</text>
+              <text class="arrow">▼</text>
+            </view>
+          </picker>
+        </view>
+        <view class="edit-section" wx:if="{{editHomeRefType === 'rank'}}">
+          <view class="edit-label">排名第几</view>
+          <input class="input" type="number" value="{{editHomeRefRank}}" bindinput="onEditHomeRefRankInput" placeholder="排名" />
+        </view>
+        <view class="edit-section" wx:if="{{editHomeRefType === 'winner' || editHomeRefType === 'loser'}}">
+          <view class="edit-label">引用比赛编号</view>
+          <input class="input" type="number" value="{{editHomeRefMatchId}}" bindinput="onEditHomeRefMatchIdInput" placeholder="比赛编号" />
+        </view>
+
+        <!-- 客队引用 -->
+        <view class="edit-section">
+          <view class="edit-label">客队来源</view>
+          <picker mode="selector" range="{{refTypeOptions}}" value="{{editAwayRefType === 'rank' ? 0 : (editAwayRefType === 'winner' ? 1 : 2)}}" bindchange="onEditAwayRefTypeChange">
+            <view class="picker-value">
+              <text>{{editAwayRefType === 'rank' ? '排名引用' : (editAwayRefType === 'winner' ? '胜者引用' : '败者引用')}}</text>
+              <text class="arrow">▼</text>
+            </view>
+          </picker>
+        </view>
+        <view class="edit-section" wx:if="{{editAwayRefType === 'rank'}}">
+          <view class="edit-label">排名第几</view>
+          <input class="input" type="number" value="{{editAwayRefRank}}" bindinput="onEditAwayRefRankInput" placeholder="排名" />
+        </view>
+        <view class="edit-section" wx:if="{{editAwayRefType === 'winner' || editAwayRefType === 'loser'}}">
+          <view class="edit-label">引用比赛编号</view>
+          <input class="input" type="number" value="{{editAwayRefMatchId}}" bindinput="onEditAwayRefMatchIdInput" placeholder="比赛编号" />
+        </view>
+      </block>
+
+      <!-- 通用字段：场地、时间 -->
+      <view class="edit-section">
+        <view class="edit-label">场地</view>
+        <picker mode="selector" range="{{venueCountOptions}}" value="{{editVenueIndex}}" bindchange="onEditVenueChange">
+          <view class="picker-value">
+            <text>场地{{editVenueIndex + 1}}</text>
+            <text class="arrow">▼</text>
+          </view>
+        </picker>
+      </view>
+
+      <view class="edit-section">
+        <view class="edit-label">开始时间</view>
+        <input class="input" placeholder="09:00" value="{{editStartTime}}" bindinput="onEditTimeInput" />
+      </view>
+
+      <view class="edit-section">
+        <view class="edit-label">比赛时长(分钟)</view>
+        <input class="input" type="number" value="{{editDuration}}" bindinput="onEditDurationInput" />
+      </view>
+    </view>
+
+    <view class="modal-footer">
+      <button class="btn-cancel" bindtap="closeEditModal">取消</button>
+      <button class="btn-confirm" bindtap="saveSlotEdit">保存</button>
+    </view>
+  </view>
+  </block>
+
+  <!-- ===== 添加比赛弹窗 ===== -->
+  <block wx:if="{{showAddModal}}">
+  <view class="modal-overlay show" bindtap="closeAddModal"></view>
+  <view class="modal show">
+    <view class="modal-header">
+      <text class="modal-title">添加新比赛（编号 #{{matchIdCounter + 1}}）</text>
+      <text class="modal-close" bindtap="closeAddModal">✕</text>
+    </view>
+
+    <view class="modal-body">
+      <!-- 比赛阶段 -->
+      <view class="edit-section">
+        <view class="edit-label">比赛阶段</view>
+        <picker mode="selector" range="{{['小组赛', '排位赛']}}" value="{{addStage === 'group' ? 0 : 1}}" bindchange="onAddStageChange">
+          <view class="picker-value">
+            <text>{{addStage === 'group' ? '小组赛' : '排位赛'}}</text>
+            <text class="arrow">▼</text>
+          </view>
+        </picker>
+      </view>
+
+      <!-- 小组赛：轮次 + 队伍 -->
+      <block wx:if="{{addStage === 'group'}}">
+        <view class="edit-section">
+          <view class="edit-label">轮次</view>
+          <input class="input" type="number" value="{{addRound}}" bindinput="onAddRoundInput" placeholder="第几轮" />
+        </view>
+
+        <!-- 分组模式：先选组，再从组内选队伍 -->
+        <block wx:if="{{useGroups}}">
+          <view class="edit-section">
+            <view class="edit-label">分组</view>
+            <picker mode="selector" range="{{groupOptions}}" value="{{addGroup}}" bindchange="onAddGroupChange">
+              <view class="picker-value">
+                <text>{{groupOptions[addGroup]}}</text>
+                <text class="arrow">▼</text>
+              </view>
+            </picker>
+          </view>
+
+          <view class="edit-section">
+            <view class="edit-label">主队</view>
+            <picker mode="selector" range="{{groupTeamOptions}}" value="{{addHomeSlot - groupTeamSlots[0]}}" bindchange="onAddHomeSlotChange">
+              <view class="picker-value">
+                <text>{{groupTeamOptions[addHomeSlot - groupTeamSlots[0]]}}</text>
+                <text class="arrow">▼</text>
+              </view>
+            </picker>
+          </view>
+
+          <view class="edit-section">
+            <view class="edit-label">客队</view>
+            <picker mode="selector" range="{{groupTeamOptions}}" value="{{addAwaySlot - groupTeamSlots[0]}}" bindchange="onAddAwaySlotChange">
+              <view class="picker-value">
+                <text>{{groupTeamOptions[addAwaySlot - groupTeamSlots[0]]}}</text>
+                <text class="arrow">▼</text>
+              </view>
+            </picker>
+          </view>
+        </block>
+
+        <!-- 非分组模式：从所有队伍中选择 -->
+        <block wx:else>
+          <view class="edit-section">
+            <view class="edit-label">主队</view>
+            <picker mode="selector" range="{{teamSlotOptions}}" value="{{addHomeSlot}}" bindchange="onAddHomeSlotChange">
+              <view class="picker-value">
+                <text>队伍{{addHomeSlot + 1}}</text>
+                <text class="arrow">▼</text>
+              </view>
+            </picker>
+          </view>
+
+          <view class="edit-section">
+            <view class="edit-label">客队</view>
+            <picker mode="selector" range="{{teamSlotOptions}}" value="{{addAwaySlot}}" bindchange="onAddAwaySlotChange">
+              <view class="picker-value">
+                <text>队伍{{addAwaySlot + 1}}</text>
+                <text class="arrow">▼</text>
+              </view>
+            </picker>
+          </view>
+        </block>
+      </block>
+
+      <!-- 排位赛：轮次 + 引用 -->
+      <block wx:if="{{addStage === 'knockout'}}">
+        <view class="edit-section">
+          <view class="edit-label">轮次</view>
+          <input class="input" type="number" value="{{addRound}}" bindinput="onAddRoundInput" placeholder="第几轮" />
+        </view>
+
+        <view class="edit-section">
+          <view class="edit-label">比赛名称</view>
+          <input class="input" value="{{addMatchLabel}}" bindinput="onAddMatchLabelInput" placeholder="例如：5-6名排位赛" />
+        </view>
+
+        <view class="edit-section">
+          <view class="edit-label">主队来源</view>
+          <picker mode="selector" range="{{refTypeOptions}}" value="{{addHomeRefType === 'rank' ? 0 : (addHomeRefType === 'winner' ? 1 : 2)}}" bindchange="onAddHomeRefTypeChange">
+            <view class="picker-value">
+              <text>{{addHomeRefType === 'rank' ? '排名引用' : (addHomeRefType === 'winner' ? '胜者引用' : '败者引用')}}</text>
+              <text class="arrow">▼</text>
+            </view>
+          </picker>
+        </view>
+        <view class="edit-section" wx:if="{{addHomeRefType === 'rank'}}">
+          <view class="edit-label">排名第几</view>
+          <input class="input" type="number" value="{{addHomeRefRank}}" bindinput="onAddHomeRefRankInput" placeholder="排名" />
+        </view>
+        <view class="edit-section" wx:if="{{addHomeRefType === 'winner' || addHomeRefType === 'loser'}}">
+          <view class="edit-label">引用比赛编号</view>
+          <input class="input" type="number" value="{{addHomeRefMatchId}}" bindinput="onAddHomeRefMatchIdInput" placeholder="比赛编号" />
+        </view>
+
+        <view class="edit-section">
+          <view class="edit-label">客队来源</view>
+          <picker mode="selector" range="{{refTypeOptions}}" value="{{addAwayRefType === 'rank' ? 0 : (addAwayRefType === 'winner' ? 1 : 2)}}" bindchange="onAddAwayRefTypeChange">
+            <view class="picker-value">
+              <text>{{addAwayRefType === 'rank' ? '排名引用' : (addAwayRefType === 'winner' ? '胜者引用' : '败者引用')}}</text>
+              <text class="arrow">▼</text>
+            </view>
+          </picker>
+        </view>
+        <view class="edit-section" wx:if="{{addAwayRefType === 'rank'}}">
+          <view class="edit-label">排名第几</view>
+          <input class="input" type="number" value="{{addAwayRefRank}}" bindinput="onAddAwayRefRankInput" placeholder="排名" />
+        </view>
+        <view class="edit-section" wx:if="{{addAwayRefType === 'winner' || addAwayRefType === 'loser'}}">
+          <view class="edit-label">引用比赛编号</view>
+          <input class="input" type="number" value="{{addAwayRefMatchId}}" bindinput="onAddAwayRefMatchIdInput" placeholder="比赛编号" />
+        </view>
+      </block>
+
+      <!-- 通用字段 -->
+      <view class="edit-section">
+        <view class="edit-label">场地</view>
+        <picker mode="selector" range="{{venueCountOptions}}" value="{{addVenueIndex}}" bindchange="onAddVenueChange">
+          <view class="picker-value">
+            <text>场地{{addVenueIndex + 1}}</text>
+            <text class="arrow">▼</text>
+          </view>
+        </picker>
+      </view>
+
+      <view class="edit-section">
+        <view class="edit-label">开始时间</view>
+        <input class="input" placeholder="09:00" value="{{addStartTime}}" bindinput="onAddTimeInput" />
+      </view>
+
+      <view class="edit-section">
+        <view class="edit-label">比赛时长(分钟)</view>
+        <input class="input" type="number" value="{{addDuration}}" bindinput="onAddDurationInput" />
+      </view>
+    </view>
+
+    <view class="modal-footer">
+      <button class="btn-cancel" bindtap="closeAddModal">取消</button>
+      <button class="btn-confirm" bindtap="confirmAddSlot">确认添加</button>
+    </view>
+  </view>
+  </block>
+</view>

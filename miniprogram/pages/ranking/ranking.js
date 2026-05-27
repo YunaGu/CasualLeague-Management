@@ -5,7 +5,9 @@ Page({
     currentTournament: null,
     standings: null,
     groups: [],
-    advancementRules: []
+    advancementRules: [],
+    rulesTitle: '晋级规则',
+    qualifiedCount: 0
   },
 
   onShow() {
@@ -25,17 +27,54 @@ Page({
       teams: standings[name]
     }))
     const advancementRules = this.buildAdvancementRules(current)
+    const qualifiedCount = this.getQualifiedCount(current)
+    const rulesTitle = current.templateConfig && current.templateConfig.enableKnockout ? '晋级规则' : '排名说明'
 
     this.setData({
       currentTournament: current,
       standings,
       groups,
-      advancementRules
+      advancementRules,
+      rulesTitle,
+      qualifiedCount
     })
   },
 
+  getQualifiedCount(currentTournament) {
+    const templateConfig = currentTournament ? currentTournament.templateConfig : null
+    const teamCount = currentTournament ? (currentTournament.teamCount || ((currentTournament.teams || []).length)) : 0
+
+    if (templateConfig && templateConfig.enableKnockout === false) return 0
+    if (currentTournament && currentTournament.groups && currentTournament.groups.length < 2) return 0
+    if (teamCount === 10) return 1
+    return 2
+  },
+
   buildAdvancementRules(currentTournament) {
-    if (!currentTournament || !currentTournament.groups || currentTournament.groups.length < 2) {
+    if (!currentTournament) {
+      return []
+    }
+
+    const templateConfig = currentTournament.templateConfig || {
+      useGroups: !!(currentTournament.groups && currentTournament.groups.length >= 2),
+      enableKnockout: !!(currentTournament.groups && currentTournament.groups.length >= 2)
+    }
+
+    if (!templateConfig.enableKnockout) {
+      if (templateConfig.useGroups) {
+        return [
+          '各组按积分、净胜球、进球数排序。',
+          '当前模版不生成排位赛，最终名次以积分榜为准。'
+        ]
+      }
+
+      return [
+        '所有队伍按总榜积分排序。',
+        '同分排名顺序：积分 > 净胜球 > 进球数。'
+      ]
+    }
+
+    if (!currentTournament.groups || currentTournament.groups.length < 2) {
       return []
     }
 

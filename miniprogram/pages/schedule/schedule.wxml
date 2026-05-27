@@ -8,20 +8,21 @@
     <!-- 标签切换 -->
     <view class="tabs" wx:if="{{hasKnockout}}">
       <view class="tab {{activeTab === 'group' ? 'active' : ''}}" bindtap="switchTab" data-tab="group">
-        <text>小组赛</text>
+        <text>{{groupStageTitle}}</text>
       </view>
       <view class="tab {{activeTab === 'knockout' ? 'active' : ''}}" bindtap="switchTab" data-tab="knockout">
         <text>排位赛</text>
       </view>
     </view>
 
-    <!-- 小组赛列表 -->
+    <!-- 第一阶段列表 -->
     <block wx:if="{{activeTab === 'group'}}">
       <view class="round-section" wx:for="{{groupMatches}}" wx:key="round">
         <view class="round-title">第 {{item.round}} 轮</view>
         <view class="card">
           <view class="schedule-match" wx:for="{{item.matches}}" wx:for-item="match" wx:key="id" 
                 bindtap="goMatch" bindlongpress="onLongPressMatch" data-id="{{match.id}}">
+            <view class="match-no" wx:if="{{match.matchNo != null}}">#{{match.matchNo}}</view>
             <view class="match-row">
               <text class="team-name home">{{match.homeTeamName}}</text>
               <view class="score-box {{match.status}}">
@@ -39,7 +40,7 @@
             </view>
             <view class="match-info">
               <text class="tag status-tag {{match.status === 'playing' ? 'tag-red' : match.status === 'finished' ? 'tag-gray' : 'tag-blue'}}">{{match.status === 'playing' ? '进行中' : match.status === 'finished' ? '已结束' : '未开始'}}</text>
-              <text class="group-label">{{match.group}}组</text>
+              <text class="group-label">{{match.groupLabel}}</text>
             </view>
             <view class="schedule-extra" wx:if="{{match.scheduleText}}">
               <text>{{match.scheduleText}}</text>
@@ -75,7 +76,7 @@
       <view class="card">
         <view class="schedule-match" wx:for="{{knockoutMatches}}" wx:key="id" 
             bindtap="goMatch" bindlongpress="onLongPressMatch" data-id="{{item.id}}">
-          <view class="knockout-label">{{item.matchLabel || (item.stage === 'fifth' ? '五六名' : item.stage)}}</view>
+          <view class="knockout-label">{{item.matchNo != null ? ('#' + item.matchNo + ' · ') : ''}}{{item.matchLabel || (item.stage === 'fifth' ? '五六名' : item.stage)}}</view>
           <view class="match-row">
             <text class="team-name home">{{item.homeTeamName}}</text>
             <view class="score-box {{item.status}}">

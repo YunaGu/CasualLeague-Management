@@ -1,15 +1,100 @@
 <view class="container">
   <!-- ===== 步骤1：填写信息 ===== -->
   <block wx:if="{{step === 1}}">
+    <!-- 模板复用提示 -->
+    <view class="template-banner" wx:if="{{fromTemplate && loadedTemplate}}">
+      <view class="banner-icon">📋</view>
+      <view class="banner-content">
+        <text class="banner-title">正在使用模板：{{loadedTemplate.name}}</text>
+        <text class="banner-desc" wx:if="{{hasMatchSlots}}">已包含完整编排（{{loadedTemplate.matchSlots.length}}场比赛），只需输入球队和场地名称</text>
+        <text class="banner-desc" wx:else>已加载赛制和时间配置，创建后可手动编排</text>
+      </view>
+    </view>
+
     <!-- 赛事名称 -->
     <view class="card">
       <view class="section-title">赛事名称</view>
       <input class="input" placeholder="请输入赛事名称" value="{{name}}" bindinput="onNameInput" />
     </view>
 
+    <!-- ===== 使用模板（带编排）时的简化流程 ===== -->
+    <block wx:if="{{fromTemplate && hasMatchSlots}}">
+      <!-- 场地名称映射 -->
+      <view class="card">
+        <view class="section-title">场地名称（{{loadedTemplate.venueCount}}个）</view>
+        <view class="mapping-tip">为模板中的场地编号指定实际名称</view>
+        <view class="mapping-list">
+          <view class="mapping-item" wx:for="{{venueMapping}}" wx:key="index">
+            <text class="mapping-label">场地{{index + 1}}</text>
+            <text class="mapping-arrow">→</text>
+            <input class="mapping-input" placeholder="输入场地名称" value="{{item}}" data-index="{{index}}" bindinput="onVenueMappingInput" />
+          </view>
+        </view>
+      </view>
+
+      <!-- 球队名称映射 -->
+      <view class="card">
+        <view class="section-title">球队名称（{{teamCount}}支）</view>
+        <view class="mapping-tip">为模板中的球队编号指定实际名称</view>
+        <view class="mapping-list">
+          <view class="mapping-item" wx:for="{{teams}}" wx:key="index" wx:if="{{index < teamCount}}">
+            <text class="mapping-label">队伍{{index + 1}}</text>
+            <text class="mapping-arrow">→</text>
+            <input class="mapping-input" placeholder="输入球队名称" value="{{item.name}}" data-index="{{index}}" bindinput="onTeamNameInput" />
+          </view>
+        </view>
+      </view>
+
+      <!-- 直接创建 -->
+      <button class="btn-primary submit-btn" bindtap="submitFromTemplate">创建赛事</button>
+    </block>
+
+    <!-- ===== 非模板或模板无编排时的正常流程 ===== -->
+    <block wx:else>
+
     <!-- 赛制与场地配置 -->
     <view class="card">
-      <view class="section-title">场地与时间配置</view>
+      <view class="section-title">赛事模版</view>
+      <picker mode="selector" range="{{templateOptions}}" value="{{templateIndex}}" bindchange="onTemplateChange">
+        <view class="picker-value">
+          <text>{{templateOptions[templateIndex]}}</text>
+          <text class="arrow">▼</text>
+        </view>
+      </picker>
+
+      <view class="template-card" wx:if="{{templateType === 'group'}}">
+        <view class="template-title">默认模版说明</view>
+        <view class="template-desc">两组分组，组内双循环；小组结束后自动进入排位赛。</view>
+      </view>
+
+      <view class="template-card" wx:if="{{templateType === 'league'}}">
+        <view class="template-title">默认模版说明</view>
+        <view class="template-desc">不分组，所有队伍单循环交手，按积分直接排出总名次。</view>
+      </view>
+
+      <view class="template-card" wx:if="{{templateType === 'custom'}}">
+        <view class="template-title">自定义模版</view>
+        <view class="template-desc">如需自定义比赛场次，请通过模版库创建</view>
+        <view class="switch-row">
+          <text class="config-label">启用分组</text>
+          <switch checked="{{customUseGroups}}" bindchange="onCustomUseGroupsChange" color="#1AAD19" />
+        </view>
+        <view class="config-item">
+          <view class="config-label">循环轮次</view>
+          <picker mode="selector" range="{{customLegsOptions}}" value="{{customLegsIndex}}" bindchange="onCustomLegsChange">
+            <view class="picker-value">
+              <text>{{customLegs}} 循环</text>
+              <text class="arrow">▼</text>
+            </view>
+          </picker>
+        </view>
+        <view class="switch-row" wx:if="{{customUseGroups}}">
+          <text class="config-label">生成排位赛</text>
+          <switch checked="{{customEnableKnockout}}" bindchange="onCustomEnableKnockoutChange" color="#1AAD19" />
+        </view>
+      </view>
+
+      <view class="section-title" style="margin-top: 32rpx;">场地与时间配置</view>
       <view class="config-item">
         <view class="config-label">场地列表（每行一个）</view>
         <textarea class="textarea" placeholder="例如：\n奥森南园7号场\n奥森南园8号场" value="{{venueText}}" bindinput="onVenueTextInput" auto-height="true" />
@@ -26,7 +111,7 @@
       </view>
       <view class="config-row">
         <view class="config-col">
-          <view class="config-label">小组赛每场(分钟)</view>
+          <view class="config-label">{{stageDurationLabel}}</view>
           <input class="input" type="number" value="{{groupMatchMinutes}}" bindinput="onGroupMinutesInput" />
         </view>
         <view class="config-col">
@@ -39,12 +124,19 @@
     <!-- 队伍数量 -->
     <view class="card">
       <view class="section-title">参赛队伍数量</view>
-      <picker mode="selector" range="{{teamCountOptions}}" bindchange="onTeamCountChange">
-        <view class="picker-value">
-          <text>{{teamCount}} 支球队</text>
-          <text class="arrow">▼</text>
+      <block wx:if="{{fromTemplate && hasMatchSlots}}">
+        <view class="picker-value locked">
+          <text>{{teamCount}} 支球队（由模板决定）</text>
         </view>
-      </picker>
+      </block>
+      <block wx:else>
+        <picker mode="selector" range="{{teamCountOptions}}" bindchange="onTeamCountChange">
+          <view class="picker-value">
+            <text>{{teamCount}} 支球队</text>
+            <text class="arrow">▼</text>
+          </view>
+        </picker>
+      </block>
     </view>
 
     <!-- 球队列表 -->
@@ -71,7 +163,8 @@
     </view>
 
     <!-- 下一步按钮 -->
-    <button class="btn-primary submit-btn" bindtap="goToGrouping">下一步：分组</button>
+    <button class="btn-primary submit-btn" bindtap="goToGrouping">{{needsGrouping ? '下一步：分组' : '直接创建赛事'}}</button>
+    </block>
   </block>
 
   <!-- ===== 步骤2：分组 ===== -->

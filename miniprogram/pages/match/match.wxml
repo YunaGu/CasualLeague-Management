@@ -2,7 +2,7 @@
   <!-- 比分面板 -->
   <view class="score-panel card">
     <view class="match-stage-label">
-      {{match.stage === 'group' ? match.group + '组' : match.matchLabel || match.stage}}
+      {{match.stage === 'group' ? (match.group === '总榜' ? '联赛' : match.group + '组') : match.matchLabel || match.stage}}
     </view>
     <view class="score-board">
       <view class="team-side">

@@ -6,7 +6,7 @@
 
   <block wx:if="{{currentTournament}}">
     <view class="group-section" wx:for="{{groups}}" wx:key="name">
-      <view class="group-title">{{item.name}} 组</view>
+      <view class="group-title">{{item.name === '总榜' ? item.name : item.name + ' 组'}}</view>
       <view class="card table-card">
         <!-- 表头 -->
         <view class="table-header">
@@ -22,7 +22,7 @@
           <text class="col-points">积分</text>
         </view>
         <!-- 表格内容 -->
-        <view class="table-row {{index < 2 ? 'qualified' : ''}}" wx:for="{{item.teams}}" wx:for-item="team" wx:for-index="index" wx:key="teamId">
+        <view class="table-row {{index < qualifiedCount ? 'qualified' : ''}}" wx:for="{{item.teams}}" wx:for-item="team" wx:for-index="index" wx:key="teamId">
           <text class="col-rank">{{index + 1}}</text>
           <text class="col-team">{{team.teamName}}</text>
           <text class="col-stat">{{team.played}}</text>
@@ -38,7 +38,7 @@
     </view>
 
     <!-- 图例 -->
-    <view class="legend">
+    <view class="legend" wx:if="{{qualifiedCount > 0}}">
       <view class="legend-item">
         <view class="legend-dot qualified-dot"></view>
         <text>晋级区</text>
@@ -46,7 +46,7 @@
     </view>
 
     <view class="card rules-card" wx:if="{{advancementRules.length > 0}}">
-      <view class="rules-title">晋级规则</view>
+      <view class="rules-title">{{rulesTitle}}</view>
       <view class="rule-item" wx:for="{{advancementRules}}" wx:key="index">
         <text class="rule-index">{{index + 1}}.</text>
         <text class="rule-text">{{item}}</text>

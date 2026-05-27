@@ -4,6 +4,7 @@ Page({
   data: {
     currentTournament: null,
     activeTab: 'group', // group, knockout
+    groupStageTitle: '小组赛',
     groupMatches: [],
     knockoutMatches: [],
     currentRound: 0,
@@ -24,6 +25,10 @@ Page({
 
     const allMatches = current.matches || []
     const venueOrderMap = this.getVenueOrderMap(current)
+    const templateConfig = current.templateConfig || {
+      useGroups: !!(current.groups && current.groups.length >= 2),
+      enableKnockout: !!(current.groups && current.groups.length >= 2)
+    }
 
     // 小组赛按轮次分组
     const groupMatchesRaw = allMatches.filter(m => m.stage === 'group')
@@ -32,8 +37,10 @@ Page({
       if (!roundMap[m.round]) roundMap[m.round] = []
       roundMap[m.round].push({
         ...m,
-        homeTeamName: tournament.getTeamName(current, m.homeTeam),
-        awayTeamName: tournament.getTeamName(current, m.awayTeam),
+        matchNo: m.templateMatchId != null ? m.templateMatchId : null,
+        groupLabel: !m.group || m.group === '总榜' ? '联赛' : `${m.group}组`,
+        homeTeamName: this.getDisplayTeamName(m, 'home', current),
+        awayTeamName: this.getDisplayTeamName(m, 'away', current),
         scheduleText: this.getScheduleText(m, current),
         penaltyText: this.getPenaltyText(m),
       })
@@ -55,8 +62,9 @@ Page({
     const knockoutMatchesRaw = allMatches.filter(m => m.stage !== 'group')
     let knockoutMatches = knockoutMatchesRaw.map(m => ({
       ...m,
-      homeTeamName: tournament.getTeamName(current, m.homeTeam),
-      awayTeamName: tournament.getTeamName(current, m.awayTeam),
+      matchNo: m.templateMatchId != null ? m.templateMatchId : null,
+      homeTeamName: this.getDisplayTeamName(m, 'home', current),
+      awayTeamName: this.getDisplayTeamName(m, 'away', current),
       scheduleText: this.getScheduleText(m, current),
       penaltyText: this.getPenaltyText(m),
       eventPreview: this.getEventPreview(m, current)
@@ -79,7 +87,8 @@ Page({
       knockoutMatches,
       rounds,
       hasKnockout,
-      activeTab: newTab
+      activeTab: newTab,
+      groupStageTitle: templateConfig.useGroups ? '小组赛' : '联赛'
     })
   },
 
@@ -89,7 +98,15 @@ Page({
   },
 
   buildKnockoutPreview(currentTournament, realKnockoutMatches) {
-    if (!currentTournament || !currentTournament.groups || currentTournament.groups.length < 2) {
+    const templateConfig = currentTournament ? (currentTournament.templateConfig || {
+      enableKnockout: !!(currentTournament.groups && currentTournament.groups.length >= 2)
+    }) : null
+
+    if (!currentTournament || !templateConfig || !templateConfig.enableKnockout) {
+      return []
+    }
+
+    if (!currentTournament.groups || currentTournament.groups.length < 2) {
       return []
     }
 
@@ -597,6 +614,15 @@ Page({
 
     if (match.venueName) parts.push(match.venueName)
     return parts.join(' · ')
+  },
+
+  getDisplayTeamName(match, side, tournamentData) {
+    const teamId = side === 'home' ? match.homeTeam : match.awayTeam
+    if (teamId) {
+      return tournament.getTeamName(tournamentData, teamId)
+    }
+    const refText = side === 'home' ? match.homeRefText : match.awayRefText
+    return refText || '待定'
   },
 
   getPenaltyText(match) {

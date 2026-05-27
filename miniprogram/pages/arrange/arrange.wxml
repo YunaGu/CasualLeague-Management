@@ -1,0 +1,213 @@
+<view class="container">
+  <!-- ===== 顶部标题栏 ===== -->
+  <view class="header">
+    <view class="title">{{tournamentName}} - 比赛编排</view>
+    <view class="subtitle">共 {{matches.length}} 场比赛 · 长按拖拽调整顺序</view>
+  </view>
+
+  <!-- ===== 比赛列表（支持拖拽排序） ===== -->
+  <view class="matches-section">
+    <view class="section-title">编排比赛</view>
+    
+    <view class="match-list" id="matchList">
+      <view 
+        class="match-card {{item.venueId ? 'allocated' : 'unallocated'}} {{dragIndex === index ? 'dragging' : ''}} {{dropTargetIndex === index ? 'drop-target' : ''}}"
+        wx:for="{{matches}}"
+        wx:key="id"
+        data-index="{{index}}"
+        data-match-id="{{item.id}}"
+        bindtap="editMatch"
+        bindlongpress="onDragStart"
+        bindtouchstart="onTouchStart"
+        bindtouchmove="onTouchMove"
+        bindtouchend="onTouchEnd"
+      >
+        <view class="match-header">
+          <view class="drag-handle" wx:if="{{!isDragging}}">⋮⋮</view>
+          <view class="match-round">
+            {{item.group ? item.group + '组' : ''}} 
+            {{item.stage === 'group' ? '小组赛' : '排位赛'}}
+            R{{item.round || 0}}
+          </view>
+          <view class="match-status {{item.venueId ? 'allocated' : 'empty'}}">
+            {{item.venueId ? '已分配' : '未分配'}}
+          </view>
+        </view>
+        
+        <view class="match-teams">
+          <view class="team-name">
+            {{item.homeTeam ? getTeamName(item.homeTeam) : '--'}}
+          </view>
+          <view class="vs">VS</view>
+          <view class="team-name">
+            {{item.awayTeam ? getTeamName(item.awayTeam) : '--'}}
+          </view>
+        </view>
+        
+        <view class="match-time" wx:if="{{item.startTimeText}}">
+          <text class="time-label">时间：</text>
+          <text class="time-value">{{item.startTimeText}}-{{item.endTimeText}}</text>
+        </view>
+        
+        <view class="match-venue" wx:if="{{item.venueName}}">
+          <text class="venue-label">场地：</text>
+          <text class="venue-value">{{item.venueName}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ===== 拖拽浮层（跟随手指移动） ===== -->
+  <view 
+    class="drag-ghost {{isDragging ? 'show' : ''}}"
+    style="top: {{dragGhostTop}}px; left: {{dragGhostLeft}}px;"
+    wx:if="{{isDragging && dragIndex >= 0}}"
+  >
+    <view class="match-teams">
+      <view class="team-name">{{matches[dragIndex].homeTeam ? getTeamName(matches[dragIndex].homeTeam) : '--'}}</view>
+      <view class="vs">VS</view>
+      <view class="team-name">{{matches[dragIndex].awayTeam ? getTeamName(matches[dragIndex].awayTeam) : '--'}}</view>
+    </view>
+    <view class="ghost-info">
+      <text>{{matches[dragIndex].startTimeText || '未分配'}}</text>
+      <text wx:if="{{matches[dragIndex].venueName}}"> · {{matches[dragIndex].venueName}}</text>
+    </view>
+  </view>
+
+  <!-- ===== 编辑比赛弹窗 ===== -->
+  <view class="modal-overlay {{showMatchEditModal ? 'show' : ''}}" bindtap="closeMatchEditModal"></view>
+  <view class="modal {{showMatchEditModal ? 'show' : ''}}">
+    <view class="modal-header">
+      <text class="modal-title">编排比赛</text>
+      <text class="modal-close" bindtap="closeMatchEditModal">✕</text>
+    </view>
+
+    <view class="modal-body">
+      <!-- 对手编辑 -->
+      <view class="edit-section">
+        <view class="section-label">对手配对</view>
+        <view class="team-edit-row">
+          <view class="team-edit-col">
+            <text class="team-label">主队</text>
+            <view class="team-selector" bindtap="showTeam1Picker">
+              <text class="selected-team">{{selectedTeam1Id ? getTeamName(selectedTeam1Id) : '选择球队'}}</text>
+              <text class="arrow">▼</text>
+            </view>
+          </view>
+          <view class="team-edit-col">
+            <text class="team-label">客队</text>
+            <view class="team-selector" bindtap="showTeam2Picker">
+              <text class="selected-team">{{selectedTeam2Id ? getTeamName(selectedTeam2Id) : '选择球队'}}</text>
+              <text class="arrow">▼</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 时间选择 -->
+      <view class="edit-section">
+        <view class="section-label">时间槽</view>
+        <scroll-view class="time-slots-scroll" scroll-x>
+          <view 
+            class="time-slot {{selectedTimeSlot === item.startMinute ? 'selected' : ''}}"
+            wx:for="{{timeSlots}}"
+            wx:key="slot"
+            bindtap="selectTimeSlot"
+            data-index="{{index}}"
+          >
+            <text>{{item.slot}}</text>
+          </view>
+        </scroll-view>
+      </view>
+
+      <!-- 场地选择 -->
+      <view class="edit-section">
+        <view class="section-label">场地</view>
+        <view class="venue-options">
+          <view 
+            class="venue-btn {{selectedVenueId === item.id ? 'selected' : ''}}"
+            wx:for="{{venues}}"
+            wx:key="id"
+            bindtap="selectVenue"
+            data-venue-id="{{item.id}}"
+          >
+            <text>{{item.name}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="modal-footer">
+      <button class="btn-cancel" bindtap="closeMatchEditModal">取消</button>
+      <button class="btn-confirm" bindtap="saveMatchEdit">保存</button>
+    </view>
+  </view>
+
+  <!-- ===== 对手选择器弹窗 ===== -->
+  <view class="modal-overlay {{showTeamPicker ? 'show' : ''}}" bindtap="closeTeamPicker"></view>
+  <view class="modal team-picker-modal {{showTeamPicker ? 'show' : ''}}">
+    <view class="modal-header">
+      <text class="modal-title">{{teamPickerMode === 'team1' ? '选择主队' : '选择客队'}}</text>
+      <text class="modal-close" bindtap="closeTeamPicker">✕</text>
+    </view>
+
+    <view class="modal-body">
+      <view class="team-list">
+        <view 
+          class="team-item"
+          wx:for="{{teams}}"
+          wx:key="id"
+          bindtap="selectTeam"
+          data-team-id="{{item.id}}"
+        >
+          <text class="team-item-name">{{item.name}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ===== 底部操作栏 ===== -->
+  <view class="footer-actions">
+    <button class="btn btn-secondary" bindtap="goBack">取消</button>
+    <button class="btn btn-info" bindtap="showSaveTemplateModal">保存为模板</button>
+    <button class="btn btn-primary" bindtap="saveAndReturn">保存并返回</button>
+  </view>
+
+  <!-- ===== 保存模板弹窗 ===== -->
+  <view class="modal-overlay {{showSaveTemplateModal ? 'show' : ''}}" bindtap="closeSaveTemplateModal"></view>
+  <view class="modal {{showSaveTemplateModal ? 'show' : ''}}">
+    <view class="modal-header">
+      <text class="modal-title">保存为新模板</text>
+      <text class="modal-close" bindtap="closeSaveTemplateModal">✕</text>
+    </view>
+
+    <view class="modal-body">
+      <view class="form-item">
+        <text class="label">模板名称</text>
+        <input 
+          class="input"
+          placeholder="例如：标准6队模板"
+          value="{{templateName}}"
+          bindinput="onTemplateNameInput"
+        />
+      </view>
+      <view class="form-item">
+        <text class="label">描述（可选）</text>
+        <textarea 
+          class="textarea"
+          placeholder="例如：1号场、2号场，双循环赛制"
+          value="{{templateDesc}}"
+          bindinput="onTemplateDescInput"
+        />
+      </view>
+      <view class="template-save-tip">
+        <text>保存后，模板将记录当前的比赛编排（对阵、场地、时间），下次使用只需重新输入球队名称。</text>
+      </view>
+    </view>
+
+    <view class="modal-footer">
+      <button class="btn-cancel" bindtap="closeSaveTemplateModal">取消</button>
+      <button class="btn-confirm" bindtap="saveAsTemplate">保存模板</button>
+    </view>
+  </view>
+</view>
