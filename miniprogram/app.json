@@ -3,12 +3,20 @@
     "pages/index/index",
     "pages/schedule/schedule",
     "pages/ranking/ranking",
-    "pages/players/players",
-    "pages/create/create",
-    "pages/match/match",
-    "pages/arrange/arrange",
-    "pages/template/template",
-    "pages/template-create/template-create"
+    "pages/players/players"
+  ],
+  "subPackages": [
+    {
+      "root": "packageMatch/",
+      "name": "match",
+      "pages": [
+        "pages/create/create",
+        "pages/match/match",
+        "pages/arrange/arrange",
+        "pages/template/template",
+        "pages/template-create/template-create"
+      ]
+    }
   ],
   "window": {
     "navigationBarTextStyle": "white",

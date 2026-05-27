@@ -530,7 +530,7 @@ Page({
       return
     }
     wx.navigateTo({
-      url: `/pages/match/match?matchId=${matchId}`
+      url: `/packageMatch/pages/match/match?matchId=${matchId}`
     })
   },
 
@@ -563,7 +563,7 @@ Page({
         success: (res) => {
           if (!res.confirm) return
           wx.navigateTo({
-            url: `/pages/match/match?matchId=${matchId}`
+            url: `/packageMatch/pages/match/match?matchId=${matchId}`
           })
         }
       })

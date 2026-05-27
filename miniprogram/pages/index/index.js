@@ -92,11 +92,11 @@ Page({
 
   // 创建新赛事
   goCreate() {
-    wx.navigateTo({ url: '/pages/create/create' })
+    wx.navigateTo({ url: '/packageMatch/pages/create/create' })
   },
 
   goTemplate() {
-    wx.navigateTo({ url: '/pages/template/template' })
+    wx.navigateTo({ url: '/packageMatch/pages/template/template' })
   },
 
   // 切换赛事
