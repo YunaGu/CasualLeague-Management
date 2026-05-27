@@ -1,0 +1,125 @@
+<view class="container">
+  <view class="empty-state" wx:if="{{!currentTournament}}">
+    <text class="icon">📋</text>
+    <text class="text">暂无赛事，请先创建</text>
+  </view>
+
+  <block wx:if="{{currentTournament}}">
+    <!-- 标签切换 -->
+    <view class="tabs" wx:if="{{hasKnockout}}">
+      <view class="tab {{activeTab === 'group' ? 'active' : ''}}" bindtap="switchTab" data-tab="group">
+        <text>小组赛</text>
+      </view>
+      <view class="tab {{activeTab === 'knockout' ? 'active' : ''}}" bindtap="switchTab" data-tab="knockout">
+        <text>排位赛</text>
+      </view>
+    </view>
+
+    <!-- 小组赛列表 -->
+    <block wx:if="{{activeTab === 'group'}}">
+      <view class="round-section" wx:for="{{groupMatches}}" wx:key="round">
+        <view class="round-title">第 {{item.round}} 轮</view>
+        <view class="card">
+          <view class="schedule-match" wx:for="{{item.matches}}" wx:for-item="match" wx:key="id" 
+                bindtap="goMatch" bindlongpress="onLongPressMatch" data-id="{{match.id}}">
+            <view class="match-row">
+              <text class="team-name home">{{match.homeTeamName}}</text>
+              <view class="score-box {{match.status}}">
+                <block wx:if="{{match.status === 'finished'}}">
+                  <text class="score">{{match.homeScore}} : {{match.awayScore}}</text>
+                </block>
+                <block wx:elif="{{match.status === 'playing'}}">
+                  <text class="score live">{{match.homeScore}} : {{match.awayScore}}</text>
+                </block>
+                <block wx:else>
+                  <text class="vs">VS</text>
+                </block>
+              </view>
+              <text class="team-name away">{{match.awayTeamName}}</text>
+            </view>
+            <view class="match-info">
+              <text class="tag status-tag {{match.status === 'playing' ? 'tag-red' : match.status === 'finished' ? 'tag-gray' : 'tag-blue'}}">{{match.status === 'playing' ? '进行中' : match.status === 'finished' ? '已结束' : '未开始'}}</text>
+              <text class="group-label">{{match.group}}组</text>
+            </view>
+            <view class="schedule-extra" wx:if="{{match.scheduleText}}">
+              <text>{{match.scheduleText}}</text>
+            </view>
+            <view class="schedule-extra penalty" wx:if="{{match.penaltyText}}">
+              <text>{{match.penaltyText}}</text>
+            </view>
+            <view class="event-preview" wx:if="{{match.eventPreview.items.length > 0}}">
+              <view class="event-preview-title">事件速览</view>
+              <view class="event-preview-item" wx:for="{{match.eventPreview.items}}" wx:key="index">
+                <text class="event-icon">{{item.icon}}</text>
+                <text class="event-side {{item.sideClass}}">{{item.sideText}}</text>
+                <text class="event-team">{{item.teamName}}</text>
+                <text class="event-player">{{item.number}}</text>
+                <text class="event-minute" wx:if="{{item.minute}}">{{item.minute}}</text>
+              </view>
+              <view class="event-preview-more" wx:if="{{match.eventPreview.more > 0}}">
+                还有 {{match.eventPreview.more}} 条...
+              </view>
+            </view>
+            <view class="match-actions">
+              <view class="action-btn edit" catchtap="editScheduleTap" data-id="{{match.id}}">编辑排程</view>
+              <view class="action-btn start" wx:if="{{match.status === 'pending'}}" catchtap="startMatchFromList" data-id="{{match.id}}">开始比赛</view>
+              <view class="action-btn finish" wx:if="{{match.status === 'playing'}}" catchtap="finishMatchFromList" data-id="{{match.id}}">结束比赛</view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <!-- 排位赛列表 -->
+    <block wx:if="{{activeTab === 'knockout'}}">
+      <view class="card">
+        <view class="schedule-match" wx:for="{{knockoutMatches}}" wx:key="id" 
+            bindtap="goMatch" bindlongpress="onLongPressMatch" data-id="{{item.id}}">
+          <view class="knockout-label">{{item.matchLabel || (item.stage === 'fifth' ? '五六名' : item.stage)}}</view>
+          <view class="match-row">
+            <text class="team-name home">{{item.homeTeamName}}</text>
+            <view class="score-box {{item.status}}">
+              <block wx:if="{{item.status === 'finished'}}">
+                <text class="score">{{item.homeScore}} : {{item.awayScore}}</text>
+              </block>
+              <block wx:elif="{{item.status === 'playing'}}">
+                <text class="score live">{{item.homeScore}} : {{item.awayScore}}</text>
+              </block>
+              <block wx:else>
+                <text class="vs">VS</text>
+              </block>
+            </view>
+            <text class="team-name away">{{item.awayTeamName}}</text>
+          </view>
+          <view class="match-info">
+            <text class="tag status-tag {{item.status === 'playing' ? 'tag-red' : item.status === 'finished' ? 'tag-gray' : 'tag-blue'}}">{{item.status === 'playing' ? '进行中' : item.status === 'finished' ? '已结束' : '未开始'}}</text>
+          </view>
+          <view class="schedule-extra" wx:if="{{item.scheduleText}}">
+            <text>{{item.scheduleText}}</text>
+          </view>
+          <view class="schedule-extra penalty" wx:if="{{item.penaltyText}}">
+            <text>{{item.penaltyText}}</text>
+          </view>
+          <view class="event-preview" wx:if="{{item.eventPreview.items.length > 0}}">
+            <view class="event-preview-title">事件速览</view>
+            <view class="event-preview-item" wx:for="{{item.eventPreview.items}}" wx:key="index">
+              <text class="event-icon">{{item.icon}}</text>
+              <text class="event-side {{item.sideClass}}">{{item.sideText}}</text>
+              <text class="event-team">{{item.teamName}}</text>
+              <text class="event-player">{{item.number}}</text>
+              <text class="event-minute" wx:if="{{item.minute}}">{{item.minute}}</text>
+            </view>
+            <view class="event-preview-more" wx:if="{{item.eventPreview.more > 0}}">
+              还有 {{item.eventPreview.more}} 条...
+            </view>
+          </view>
+          <view class="match-actions">
+            <view class="action-btn edit" catchtap="editScheduleTap" data-id="{{item.id}}">编辑排程</view>
+            <view class="action-btn start" wx:if="{{!item.preview && item.status === 'pending'}}" catchtap="startMatchFromList" data-id="{{item.id}}">开始比赛</view>
+            <view class="action-btn finish" wx:if="{{!item.preview && item.status === 'playing'}}" catchtap="finishMatchFromList" data-id="{{item.id}}">结束比赛</view>
+          </view>
+        </view>
+      </view>
+    </block>
+  </block>
+</view>

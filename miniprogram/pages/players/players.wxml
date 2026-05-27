@@ -1,0 +1,81 @@
+<view class="container">
+  <view class="empty-state" wx:if="{{!currentTournament}}">
+    <text class="icon">👤</text>
+    <text class="text">暂无赛事，请先创建</text>
+  </view>
+
+  <block wx:if="{{currentTournament}}">
+    <!-- 标签切换 -->
+    <view class="tabs">
+      <view class="tab {{activeTab === 'scorers' ? 'active' : ''}}" bindtap="switchTab" data-tab="scorers">
+        <text>射手榜</text>
+      </view>
+      <view class="tab {{activeTab === 'discipline' ? 'active' : ''}}" bindtap="switchTab" data-tab="discipline">
+        <text>红黄牌</text>
+      </view>
+    </view>
+
+    <!-- 射手榜 -->
+    <block wx:if="{{activeTab === 'scorers'}}">
+      <view class="empty-state" wx:if="{{topScorers.length === 0}}">
+        <text class="icon">⚽</text>
+        <text class="text">暂无进球数据</text>
+      </view>
+      <view class="card" wx:if="{{topScorers.length > 0}}">
+        <view class="scorer-item" wx:for="{{topScorers}}" wx:key="index">
+          <view class="scorer-rank {{index < 3 ? 'top-' + (index + 1) : ''}}">
+            {{index + 1}}
+          </view>
+          <view class="scorer-info">
+            <view class="scorer-name">#{{item.playerNumber}} {{item.playerName}}</view>
+            <view class="scorer-team">{{item.teamName}}</view>
+          </view>
+          <view class="edit-name-btn" bindtap="openEditName" data-item="{{item}}">编辑</view>
+          <view class="scorer-goals">
+            <text class="goals-num">{{item.goals}}</text>
+            <text class="goals-label">球</text>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <!-- 红黄牌统计 -->
+    <block wx:if="{{activeTab === 'discipline'}}">
+      <view class="empty-state" wx:if="{{disciplineStats.length === 0}}">
+        <text class="icon">📋</text>
+        <text class="text">暂无纪律数据</text>
+      </view>
+      <view class="card" wx:if="{{disciplineStats.length > 0}}">
+        <view class="discipline-item" wx:for="{{disciplineStats}}" wx:key="index">
+          <view class="discipline-rank">{{index + 1}}</view>
+          <view class="discipline-info">
+            <view class="discipline-name">#{{item.playerNumber}} {{item.playerName}}</view>
+            <view class="discipline-team">{{item.teamName}}</view>
+          </view>
+          <view class="edit-name-btn" bindtap="openEditName" data-item="{{item}}">编辑</view>
+          <view class="discipline-cards">
+            <view class="card-badge yellow" wx:if="{{item.yellowCards > 0}}">
+              <text>🟡 {{item.yellowCards}}</text>
+            </view>
+            <view class="card-badge red" wx:if="{{item.redCards > 0}}">
+              <text>🔴 {{item.redCards}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+  </block>
+
+  <view class="modal-mask" wx:if="{{showEditModal}}" bindtap="closeEditModal">
+    <view class="modal-content" catchtap="stopTap">
+      <view class="modal-title">编辑球员姓名</view>
+      <view class="modal-body">
+        <input class="name-input" placeholder="请输入姓名" value="{{editPlayerName}}" bindinput="onEditNameInput" />
+      </view>
+      <view class="modal-footer">
+        <button class="btn-cancel" bindtap="closeEditModal">取消</button>
+        <button class="btn-confirm" bindtap="confirmEditName">保存</button>
+      </view>
+    </view>
+  </view>
+</view>

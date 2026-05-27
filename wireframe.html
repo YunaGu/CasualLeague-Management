@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚽ 踢野球记分小程序 — 线框设计稿</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; background: #1a1a2e; color: #333; padding: 24px; }
+        .page-title { text-align: center; color: #fff; margin-bottom: 8px; }
+        .page-title h1 { font-size: 28px; letter-spacing: 2px; }
+        .page-title p  { font-size: 13px; color: #aaa; margin-top: 6px; }
+        .section { margin: 32px 0 12px; color: #f0c040; font-size: 15px; font-weight: 700; letter-spacing: 1px; padding-left: 8px; border-left: 3px solid #f0c040; }
+        .phones-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 28px; margin-bottom: 12px; }
+        .phone { background: #111; border-radius: 44px; padding: 14px 12px 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.08); position: relative; }
+        .phone::before { content: ''; display: block; width: 90px; height: 22px; background: #111; border-radius: 0 0 16px 16px; margin: 0 auto 10px; }
+        .phone::after { content: ''; position: absolute; top: 21px; left: 50%; transform: translateX(-50%); width: 6px; height: 6px; background: #333; border-radius: 50%; }
+        .phone-label { text-align: center; color: #ccc; font-size: 11px; margin-top: 10px; }
+        .screen { background: #f6f6f6; border-radius: 32px; overflow: hidden; min-height: 560px; position: relative; }
+        .status-bar { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px 4px; background: #fff; font-size: 11px; color: #333; font-weight: 600; }
+        .status-bar .time { font-size: 13px; font-weight: 700; }
+        .nav-bar { display: flex; align-items: center; justify-content: center; padding: 10px 16px; background: #fff; border-bottom: 1px solid #eee; position: relative; }
+        .nav-bar .title { font-size: 16px; font-weight: 600; color: #111; }
+        .nav-bar .action { position: absolute; right: 16px; font-size: 12px; color: #07c160; }
+        .tab-bar { display: flex; background: #fff; border-top: 1px solid #eee; padding: 6px 0 8px; position: absolute; bottom: 0; left: 0; right: 0; border-radius: 0 0 32px 32px; }
+        .tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; color: #999; }
+        .tab-item.active { color: #07c160; }
+        .tab-icon { font-size: 20px; }
+        .body { padding: 12px 14px 70px; background: #f6f6f6; }
+        .card { background: #fff; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+        .card-title { font-size: 13px; font-weight: 700; color: #111; margin-bottom: 8px; }
+        .hero { background: linear-gradient(135deg, #0a6e3b 0%, #1db954 100%); padding: 18px 14px 20px; color: white; }
+        .hero-name  { font-size: 19px; font-weight: 700; margin-bottom: 2px; }
+        .hero-meta  { font-size: 11px; opacity: 0.75; }
+        .hero-badges { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+        .badge { background: rgba(255,255,255,0.2); border-radius: 20px; padding: 3px 10px; font-size: 10px; font-weight: 600; }
+        .badge.green  { background: #07c160; }
+        .badge.yellow { background: #f0c040; color: #333; }
+        .progress-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .progress-label { font-size: 12px; color: #666; width: 70px; flex-shrink: 0; }
+        .progress-bar-bg { flex: 1; height: 6px; background: #eee; border-radius: 3px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background: #07c160; border-radius: 3px; }
+        .progress-pct { font-size: 11px; color: #333; font-weight: 600; width: 30px; text-align: right; }
+        .quick-btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .quick-btn { background: #07c160; color: white; border: none; border-radius: 8px; padding: 10px; font-size: 12px; font-weight: 600; text-align: center; }
+        .quick-btn.outline { background: #fff; color: #07c160; border: 1.5px solid #07c160; }
+        .seg-ctrl { display: flex; background: #eee; border-radius: 8px; padding: 2px; margin-bottom: 10px; }
+        .seg-item { flex: 1; text-align: center; padding: 5px; font-size: 11px; border-radius: 7px; font-weight: 600; color: #666; }
+        .seg-item.active { background: #fff; color: #111; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .round-label { font-size: 11px; font-weight: 700; color: #07c160; margin: 10px 0 6px; }
+        .match-row { display: flex; align-items: center; padding: 9px 0; border-bottom: 1px solid #f0f0f0; }
+        .match-row:last-child { border-bottom: none; }
+        .match-time-col { width: 50px; flex-shrink: 0; }
+        .match-time { font-size: 11px; font-weight: 700; color: #1677ff; }
+        .match-field { font-size: 10px; color: #999; margin-top: 1px; }
+        .match-teams { flex: 1; text-align: center; }
+        .team-vs-row { font-size: 12px; font-weight: 600; color: #111; }
+        .team-vs-row span { color: #999; margin: 0 4px; font-weight: 400; }
+        .match-status { padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+        .match-status.done    { background: #e8f5e9; color: #388e3c; }
+        .match-status.live    { background: #ffebee; color: #c62828; }
+        .match-status.pending { background: #f5f5f5; color: #999; }
+        .match-status.bye     { background: #fff3e0; color: #e65100; }
+        .score-pill { background: #1a1a2e; color: white; border-radius: 12px; padding: 4px 10px; font-size: 14px; font-weight: 700; letter-spacing: 2px; margin: 0 8px; }
+        .live-header { background: linear-gradient(135deg, #c62828 0%, #ef5350 100%); padding: 12px 14px; color: white; text-align: center; }
+        .live-badge { display: inline-block; background: rgba(255,255,255,0.3); border-radius: 10px; padding: 2px 8px; font-size: 10px; font-weight: 700; margin-bottom: 4px; }
+        .scoreboard { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; padding: 16px 14px; background: #fff; margin-bottom: 8px; }
+        .sb-team { text-align: center; }
+        .sb-team-name { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+        .sb-score { font-size: 52px; font-weight: 800; color: #1a1a2e; line-height: 1; }
+        .sb-vs { font-size: 16px; font-weight: 700; color: #ccc; }
+        .timer-row { text-align: center; padding: 4px 0; font-size: 12px; color: #666; }
+        .timer-row strong { color: #c62828; font-size: 14px; }
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 14px; margin-bottom: 8px; }
+        .action-btn { border: none; border-radius: 10px; padding: 12px 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .action-btn .icon { font-size: 20px; }
+        .action-btn.goal-a    { background: #e8f5e9; color: #2e7d32; }
+        .action-btn.goal-b    { background: #e3f2fd; color: #1565c0; }
+        .action-btn.yellow-c  { background: #fffde7; color: #f57f17; }
+        .action-btn.red-c     { background: #ffebee; color: #b71c1c; }
+        .action-btn.undo      { background: #fafafa; color: #666; border: 1px solid #eee; }
+        .action-btn.end-match { background: #07c160; color: #fff; }
+        .event-log { padding: 0 14px; }
+        .event-item { display: flex; align-items: center; padding: 6px 0; border-bottom: 1px solid #f5f5f5; gap: 8px; font-size: 11px; }
+        .event-min { width: 24px; height: 24px; border-radius: 50%; background: #1a1a2e; color: white; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; flex-shrink: 0; }
+        .rank-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .rank-table thead tr { background: #1a1a2e; color: white; }
+        .rank-table th { padding: 6px 4px; text-align: center; font-weight: 600; }
+        .rank-table td { padding: 6px 4px; text-align: center; border-bottom: 1px solid #f0f0f0; }
+        .rank-num { width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 10px; }
+        .rank-num.r1 { background: #f0c040; color: #333; }
+        .rank-num.r2 { background: #aaa;    color: #fff; }
+        .rank-num.r3 { background: #cd7f32; color: #fff; }
+        .rank-name { text-align: left; font-weight: 600; }
+        .pts { font-weight: 700; color: #07c160; }
+        .qualify-tag { font-size: 9px; padding: 1px 5px; border-radius: 8px; margin-left: 3px; }
+        .qualify-tag.q { background: #e8f5e9; color: #2e7d32; }
+        .bracket-header { background: linear-gradient(135deg, #1565c0 0%, #42a5f5 100%); padding: 14px; color: white; text-align: center; }
+        .bracket-wrap { padding: 0 14px 70px; background: #f6f6f6; }
+        .bracket-section-title { font-size: 11px; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin: 12px 0 6px; }
+        .bracket-match { background: #fff; border-radius: 10px; overflow: hidden; margin-bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+        .bracket-field-tag { background: #1565c0; color: white; font-size: 9px; font-weight: 700; padding: 2px 8px; }
+        .bracket-team { display: flex; align-items: center; padding: 9px 12px; border-bottom: 1px solid #f5f5f5; justify-content: space-between; }
+        .bracket-team:last-child { border-bottom: none; }
+        .bracket-team-name { font-size: 12px; font-weight: 600; }
+        .bracket-team-name.winner { color: #07c160; }
+        .bracket-score { font-size: 16px; font-weight: 800; color: #111; }
+        .bracket-score.winner { color: #07c160; }
+        .bracket-tbd { color: #bbb; font-style: italic; font-size: 11px; }
+        .champion-box { background: linear-gradient(135deg, #f0c040 0%, #ff9800 100%); border-radius: 12px; padding: 12px; text-align: center; margin-bottom: 10px; }
+        .stat-tabs { display: flex; background: #fff; border-bottom: 1px solid #eee; padding: 0 14px; }
+        .stat-tab { flex: 1; text-align: center; padding: 10px 0; font-size: 12px; font-weight: 600; color: #999; border-bottom: 2px solid transparent; }
+        .stat-tab.active { color: #07c160; border-bottom-color: #07c160; }
+        .player-row { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #f5f5f5; gap: 10px; }
+        .player-rank-num { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+        .player-rank-num.top1 { background: #f0c040; color: #333; }
+        .player-rank-num.top2 { background: #aaa;    color: #fff; }
+        .player-rank-num.top3 { background: #cd7f32; color: #fff; }
+        .player-rank-num.rest { background: #eee;    color: #666; }
+        .player-avatar { width: 32px; height: 32px; border-radius: 50%; background: #e0e0e0; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+        .player-info { flex: 1; }
+        .player-name  { font-size: 12px; font-weight: 600; }
+        .player-team  { font-size: 10px; color: #999; margin-top: 1px; }
+        .player-count { font-size: 18px; font-weight: 800; color: #07c160; }
+        .modal-overlay { background: rgba(0,0,0,0.5); position: absolute; inset: 0; display: flex; align-items: flex-end; border-radius: 32px; overflow: hidden; }
+        .modal-sheet { background: #fff; border-radius: 20px 20px 0 0; width: 100%; padding: 16px; }
+        .modal-title { text-align: center; font-size: 15px; font-weight: 700; margin-bottom: 14px; color: #111; }
+        .modal-subtitle { font-size: 12px; color: #666; margin-bottom: 10px; }
+        .player-select-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 4px; border-bottom: 1px solid #f5f5f5; font-size: 12px; }
+        .player-select-item .p-name { font-weight: 600; }
+        .player-select-item .p-team { color: #999; font-size: 10px; }
+        .select-check { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #ddd; flex-shrink: 0; }
+        .select-check.checked { background: #07c160; border-color: #07c160; }
+        .modal-confirm { background: #07c160; color: white; border: none; border-radius: 10px; width: 100%; padding: 12px; font-size: 14px; font-weight: 700; margin-top: 12px; }
+        .form-group { margin-bottom: 10px; }
+        .form-label { font-size: 12px; color: #666; margin-bottom: 4px; display: block; }
+        .form-input { width: 100%; padding: 9px 12px; border: 1.5px solid #eee; border-radius: 8px; font-size: 13px; background: #fff; color: #333; }
+        .form-input.focus { border-color: #07c160; }
+        .team-count-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+        .team-count-btn { border: 1.5px solid #eee; border-radius: 8px; padding: 8px 4px; text-align: center; font-size: 13px; font-weight: 700; background: #fff; color: #666; }
+        .team-count-btn.selected { border-color: #07c160; background: #e8f5e9; color: #07c160; }
+        .team-config-row { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #f5f5f5; gap: 8px; }
+        .team-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: white; flex-shrink: 0; }
+        .team-config-name { flex: 1; font-size: 12px; font-weight: 600; }
+        .team-config-players { font-size: 11px; color: #999; }
+        .submit-btn { background: linear-gradient(135deg, #07c160 0%, #0bb55b 100%); color: white; border: none; border-radius: 12px; width: 100%; padding: 14px; font-size: 15px; font-weight: 700; margin-top: 14px; letter-spacing: 1px; }
+        .flow-container { background: #fff; border-radius: 16px; padding: 24px; margin-top: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        .flow-title { font-size: 16px; font-weight: 700; color: #1a1a2e; margin-bottom: 20px; }
+        .flow-row { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0; margin-bottom: 8px; }
+        .flow-node { background: #e8f5e9; border: 2px solid #07c160; border-radius: 10px; padding: 8px 14px; font-size: 12px; font-weight: 600; color: #1a5e35; text-align: center; min-width: 80px; }
+        .flow-node.blue  { background: #e3f2fd; border-color: #1565c0; color: #0d2f6e; }
+        .flow-node.red   { background: #ffebee; border-color: #c62828; color: #7f0000; }
+        .flow-node.gold  { background: #fffde7; border-color: #f57f17; color: #7a5000; }
+        .flow-arrow { font-size: 16px; color: #bbb; padding: 0 6px; }
+        .data-model { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 16px; }
+        .data-card { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+        .data-card-title { font-size: 13px; font-weight: 700; color: #1a1a2e; margin-bottom: 10px; }
+        .data-field { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #555; padding: 3px 0; border-bottom: 1px dashed #f0f0f0; }
+        .data-field:last-child { border-bottom: none; }
+        .field-type { font-size: 9px; padding: 1px 5px; border-radius: 4px; font-weight: 600; flex-shrink: 0; }
+        .field-type.str  { background: #e3f2fd; color: #1565c0; }
+        .field-type.num  { background: #e8f5e9; color: #2e7d32; }
+        .field-type.arr  { background: #fff3e0; color: #e65100; }
+        .field-type.ref  { background: #f3e5f5; color: #6a1b9a; }
+        .field-type.bool { background: #fce4ec; color: #880e4f; }
+        .note { background: #fffde7; border-left: 3px solid #f0c040; border-radius: 0 8px 8px 0; padding: 8px 12px; font-size: 11px; color: #5d4037; margin-bottom: 10px; line-height: 1.6; }
+        .note strong { color: #3e2723; }
+        .sb-cards { display: flex; justify-content: center; gap: 3px; margin-top: 4px; }
+        .card-icon-y { display: inline-block; width: 10px; height: 14px; border-radius: 2px; background: #f0c040; }
+    </style>
+</head>
+<body>
+
+<div class="page-title">
+    <h1>⚽ 踢野球记分小程序 — UI 线框设计稿</h1>
+    <p>6队 / 8队赛制 · 小组赛 + 半决赛 + 决赛 · 实时比分 · 积分排名 · 进球 / 红黄牌记录</p>
+</div>
+
+<div class="section">① 创建赛事 &amp; 主页概览</div>
+<div class="phones-row">
+
+    <!-- A1 创建赛事 -->
+    <div>
+        <div class="phone"><div class="screen">
+            <div class="status-bar"><span class="time">9:41</span><span>●●● WiFi 🔋</span></div>
+            <div class="nav-bar"><span class="title">创建新赛事</span></div>
+            <div class="body">
+                <div class="card">
+                    <div class="card-title">📋 基本信息</div>
+                    <div class="form-group"><label class="form-label">赛事名称</label><input class="form-input focus" value="踢野球半日球局 vol.12" readonly /></div>
+                    <div class="form-group"><label class="form-label">比赛日期</label><input class="form-input" value="2026年5月27日 下午" readonly /></div>
+                    <div class="form-group"><label class="form-label">场地数量</label>
+                        <div class="team-count-row">
+                            <div class="team-count-btn">1</div><div class="team-count-btn selected">2</div>
+                            <div class="team-count-btn">3</div><div class="team-count-btn">4</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">👥 参赛队伍数量</div>
+                    <div class="team-count-row">
+                        <div class="team-count-btn selected">6</div><div class="team-count-btn">8</div>
+                        <div class="team-count-btn">10</div><div class="team-count-btn">12</div>
+                    </div>
+                    <div class="note" style="margin-top:10px;"><strong>6队：</strong>A/B两组各3队，主客场双循环，共6轮小组赛</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">🏟️ 分组配置（自动）</div>
+                    <div class="team-config-row"><div class="team-dot" style="background:#0a6e3b;">A1</div><div class="team-config-name">A组 第1队</div><div class="team-config-players">添加球员 →</div></div>
+                    <div class="team-config-row"><div class="team-dot" style="background:#0a6e3b;">A2</div><div class="team-config-name">A组 第2队</div><div class="team-config-players">添加球员 →</div></div>
+                    <div class="team-config-row"><div class="team-dot" style="background:#0a6e3b;">A3</div><div class="team-config-name">A组 第3队</div><div class="team-config-players">添加球员 →</div></div>
+                    <div class="team-config-row"><div class="team-dot" style="background:#1565c0;">B1</div><div class="team-config-name">B组 第1队</div><div class="team-config-players">添加球员 →</div></div>
+                    <div class="team-config-row"><div class="team-dot" style="background:#1565c0;">B2</div><div class="team-config-name">B组 第2队</div><div class="team-config-players">添加球员 →</div></div>
+                    <div class="team-config-row"><div class="team-dot" style="background:#1565c0;">B3</div><div class="team-config-name">B组 第3队</div><div class="team-config-players">添加球员 →</div></div>
+                </div>
+                <button class="submit-btn">🚀 生成赛程 &amp; 开始</button>
+            </div>
+        </div></div>
+        <div class="phone-label">A1 · 创建赛事 / 分组设置</div>
+    </div>
+
+    <!-- A2 主页概览 -->
+    <div>
+        <div class="phone"><div class="screen">
+            <div class="status-bar"><span class="time">14:01</span><span>●●● WiFi 🔋</span></div>
+            <div class="hero">
+                <div style="font-size:11px;opacity:0.8;margin-bottom:4px;">踢野球 Vol.12</div>
+                <div class="hero-name">半日球局</div>
+                <div class="hero-meta">📅 2026-05-27 &nbsp;|&nbsp; 🏟️ 2块场地</div>
+                <div class="hero-badges">
+                    <span class="badge green">进行中</span>
+                    <span class="badge">6支队伍</span>
+                    <span class="badge yellow">第4轮</span>
+                </div>
+            </div>
+            <div class="body" style="padding-top:12px;">
+                <div class="card">
+                    <div class="card-title">📊 赛程进度</div>
+                    <div class="progress-row"><span class="progress-label">小组赛</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:50%"></div></div><span class="progress-pct">50%</span></div>
+                    <div class="progress-row"><span class="progress-label">半决赛</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:0%"></div></div><span class="progress-pct">0%</span></div>
+                    <div class="progress-row"><span class="progress-label">决赛</span><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:0%"></div></div><span class="progress-pct">0%</span></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">⚡ 正在进行</div>
+                    <div class="match-row">
+                        <div class="match-time-col"><div class="match-time">14:01</div><div class="match-field">1号场</div></div>
+                        <div class="match-teams"><div class="team-vs-row">A1 <span class="score-pill">1 : 0</span> A2</div></div>
+                        <div class="match-status live">● 直播</div>
+                    </div>
+                    <div class="match-row">
+                        <div class="match-time-col"><div class="match-time">14:01</div><div class="match-field">2号场</div></div>
+                        <div class="match-teams"><div class="team-vs-row">B1 <span class="score-pill">2 : 1</span> B2</div></div>
+                        <div class="match-status live">● 直播</div>
+                    </div>
+                </div>
+                <div class="quick-btn-row">
+                    <button class="quick-btn">📋 查看赛程</button>
+                    <button class="quick-btn outline">🏆 实时排名</button>
+                </div>
+            </div>
+            <div class="tab-bar">
+                <div class="tab-item active"><span class="tab-icon">🏠</span>主页</div>
+                <div class="tab-item"><span class="tab-icon">📅</span>赛程</div>
+                <div class="tab-item"><span class="tab-icon">🏆</span>排名</div>
+                <div class="tab-item"><span class="tab-icon">👤</span>球员</div>
+            </div>
+        </div></div>
+        <div class="phone-label">A2 · 主页概览（进行中赛事）</div>
+    </div>
+
+</div>
+
+<div class="section">② 赛程表 &amp; 实时比分录入</div>
+<div class="phones-row">
+
+    <!-- B1 赛程表 -->
+    <div>
+        <div class="phone"><div class="screen">
+            <div class="status-bar"><span class="time">14:01</span><span>●●● WiFi 🔋</span></div>
+            <div class="nav-bar"><span class="title">赛程安排</span></div>
+            <div class="body">
+                <div class="seg-ctrl">
+                    <div class="seg-item active">小组赛</div>
+                    <div class="seg-item">半决赛</div>
+                    <div class="seg-item">决赛</div>
+                </div>
+                <div class="card" style="padding-bottom:4px;">
+                    <div class="round-label">第1轮 13:10 ~ 13:22</div>
+                    <div class="match-row">
+                        <div class="match-time-col"><div class="match-time">13:10</div><div class="match-field">1号场</div></div>
+                        <div class="match-teams"><div class="team-vs-row">A1 <span class="score-pill">3 : 1</span> A2</div></div>
+                        <div class="match-status done">已完</div>
+                    </div>
+                    <div class="match-row">
+                        <div class="match-time-col"><div class="match-time">13:10</div><div class="match-field">2号场</div></div>
+                        <div class="match-teams"><div class="team-vs-row">B1 <span class="score-pill">2 : 0</span> B2</div></div>
+                        <div class="match-status done">已完</div>
+                    </div>
+                    <div class="match-row">
+                        <div class="match-time-col"><div class="match-time">13:10</div><div class="match-field">轮空</div></div>
+                        <div class="match-teams"><div class="team-vs-row" style="color:#999;">A3 &amp; B3 轮空</div></div>
+                        <div class="match-status bye">轮空</div>
+                    </div>
+                    <div class="round-label" style="margin-top:8px;">第2轮 13:27 ~ 13:39</div>
+                    <div class="match-row">
+                        <div class="match-time-col"><div class="match-time">13:27</div><div class="match-field">1号场</div></div>
+                        <div class="match-teams"><div class="team-vs-row">A1 <span class="score-pill">1 : 2</span> A3</div></div>
+                        <div class="match-status done">已完</div>
+                    </div>
+                    <div class="match-row">
+                        <div class="match-time-col"><div class="match-time">13:27</div><div class="match-field">2号场</div></div>
+                        <div class="match-teams"><div class="team-vs-row">B1 <span class="score-pill">1 : 1</span> B3</div></div>
+                        <div class="match-status done">已完</div>
+                    </div>
+                    <div class="round-label" style="margin-top:8px;">第4轮（进行中）14:01 ~ 14:13</div>
+                    <div class="match-row">
+                        <div class="match-time-col"><div class="match-time">14:01</div><div class="match-field">1号场</div></div>
+                        <div class="match-teams"><div class="team-vs-row">A2 <span class="score-pill" style="background:#c62828;">1 : 0</span> A1</div></div>
+                        <div class="match-status live">● 直播</div>
+                    </div>
+                    <div class="round-label" style="margin-top:8px;">半决赛 14:55 ~ 15:20</div>
+                    <div class="match-row">
+                        <div class="match-time-col"><div class="match-time">14:55</div><div class="match-field">1号场</div></div>
+                        <div class="match-teams"><div class="team-vs-row" style="color:#999;">A组第1 vs B组第2</div></div>
+                        <div class="match-status pending">待赛</div>
+                    </div>
+                    <div class="match-row">
+                        <div class="match-time-col"><div class="match-time">14:55</div><div class="match-field">2号场</div></div>
+                        <div class="match-teams"><div class="team-vs-row" style="color:#999;">B组第1 vs A组第2</div></div>
+                        <div class="match-status pending">待赛</div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-bar">
+                <div class="tab-item"><span class="tab-icon">🏠</span>主页</div>
+                <div class="tab-item active"><span class="tab-icon">📅</span>赛程</div>
+                <div class="tab-item"><span class="tab-icon">🏆</span>排名</div>
+                <div class="tab-item"><span class="tab-icon">👤</span>球员</div>
+            </div>
+        </div></div>
+        <div class="phone-label">B1 · 赛程总览</div>
+    </div>
+
+    <!-- B2 实时比分录入 -->
+    <div>
+        <div class="phone"><div class="screen">
+            <div class="status-bar"><span class="time">14:05</span><span>●●● WiFi 🔋</span></div>
+            <div class="live-header">
+                <div class="live-badge">● 直播</div>
+                <div style="font-size:13px;font-weight:700;margin:2px 0;">1号场 · 小组赛 第4轮</div>
+                <div style="font-size:11px;opacity:0.85;">14:01 ~ 14:13 &nbsp;|&nbsp; 每场12分钟</div>
+            </div>
+            <div class="scoreboard">
+                <div class="sb-team">
+                    <div class="sb-team-name" style="color:#0a6e3b;">A2队</div>
+                    <div class="sb-score" style="color:#0a6e3b;">1</div>
+                    <div class="sb-cards"><span class="card-icon-y"></span></div>
+                </div>
+                <div><div class="sb-vs">-</div></div>
+                <div class="sb-team">
+                    <div class="sb-team-name" style="color:#1565c0;">A1队</div>
+                    <div class="sb-score" style="color:#1565c0;">0</div>
+                </div>
+            </div>
+            <div class="timer-row">⏱ <strong>04:32</strong> 已过</div>
+            <div class="action-grid">
+                <button class="action-btn goal-a"><span class="icon">⚽</span>A2 进球</button>
+                <button class="action-btn goal-b"><span class="icon">⚽</span>A1 进球</button>
+                <button class="action-btn yellow-c"><span class="icon">🟨</span>黄牌</button>
+                <button class="action-btn red-c"><span class="icon">🟥</span>红牌</button>
+                <button class="action-btn undo"><span class="icon">↩️</span>撤销</button>
+                <button class="action-btn end-match"><span class="icon">✅</span>结束比赛</button>
+            </div>
+            <div class="event-log">
+                <div class="card-title" style="font-size:11px;color:#666;margin:6px 0;">📝 本场记录</div>
+                <div class="event-item"><div class="event-min">4'</div><div style="flex:1;font-size:11px;"><strong>赵六</strong>（A2）进球 ⚽</div></div>
+                <div class="event-item"><div class="event-min">2'</div><div style="flex:1;font-size:11px;color:#f57f17;"><strong>张三</strong>（A1）黄牌 🟨</div></div>
+            </div>
+            <div class="tab-bar">
+                <div class="tab-item"><span class="tab-icon">🏠</span>主页</div>
+                <div class="tab-item active"><span class="tab-icon">📅</span>赛程</div>
+                <div class="tab-item"><span class="tab-icon">🏆</span>排名</div>
+                <div class="tab-item"><span class="tab-icon">👤</span>球员</div>
+            </div>
+        </div></div>
+        <div class="phone-label">B2 · 实时比分录入页</div>
+    </div>
+
+    <!-- B3 进球弹窗 -->
+    <div>
+        <div class="phone"><div class="screen" style="position:relative;">
+            <div class="status-bar"><span class="time">14:05</span><span>●●● WiFi 🔋</span></div>
+            <div class="live-header">
+                <div class="live-badge">● 直播</div>
+                <div style="font-size:13px;font-weight:700;margin:2px 0;">1号场 · 小组赛 第4轮</div>
+            </div>
+            <div class="scoreboard">
+                <div class="sb-team"><div class="sb-team-name" style="color:#0a6e3b;">A2队</div><div class="sb-score" style="color:#0a6e3b;">1</div></div>
+                <div><div class="sb-vs">-</div></div>
+                <div class="sb-team"><div class="sb-team-name" style="color:#1565c0;">A1队</div><div class="sb-score" style="color:#1565c0;">0</div></div>
+            </div>
+            <div style="padding:10px 14px;font-size:11px;color:#999;text-align:center;">（背景：比分录入页）</div>
+            <div class="modal-overlay">
+                <div class="modal-sheet">
+                    <div class="modal-title">⚽ 记录进球 · A2队</div>
+                    <div class="modal-subtitle">选择进球球员（可多选·含助攻）</div>
+                    <div class="player-select-item"><div><div class="p-name">赵六</div><div class="p-team">A2队 · 前锋</div></div><div class="select-check checked"></div></div>
+                    <div class="player-select-item"><div><div class="p-name">钱七</div><div class="p-team">A2队 · 中场</div></div><div class="select-check"></div></div>
+                    <div class="player-select-item"><div><div class="p-name">孙八</div><div class="p-team">A2队 · 后卫</div></div><div class="select-check"></div></div>
+                    <div class="player-select-item"><div><div class="p-name">李九</div><div class="p-team">A2队 · 门将</div></div><div class="select-check"></div></div>
+                    <button class="modal-confirm">✅ 确认 · 进球 +1</button>
+                </div>
+            </div>
+        </div></div>
+        <div class="phone-label">B3 · 进球 / 黄红牌 记录弹窗</div>
+    </div>
+
+</div>
+
+<div class="section">③ 积分排名 &amp; 淘汰赛对阵</div>
+<div class="phones-row">
+
+    <!-- C1 积分排名 -->
+    <div>
+        <div class="phone"><div class="screen">
+            <div class="status-bar"><span class="time">14:50</span><span>●●● WiFi 🔋</span></div>
+            <div class="nav-bar"><span class="title">小组积分排名</span><span class="action">实时</span></div>
+            <div class="body">
+                <div class="card">
+                    <div class="card-title">A 组</div>
+                    <table class="rank-table">
+                        <thead><tr><th>#</th><th style="text-align:left;padding-left:6px;">队伍</th><th>场</th><th>胜</th><th>平</th><th>负</th><th>净胜</th><th>积分</th></tr></thead>
+                        <tbody>
+                            <tr><td><span class="rank-num r1">1</span></td><td class="rank-name">A3 <span class="qualify-tag q">晋级</span></td><td>4</td><td>3</td><td>0</td><td>1</td><td>+5</td><td class="pts">9</td></tr>
+                            <tr><td><span class="rank-num r2">2</span></td><td class="rank-name">A1 <span class="qualify-tag q">晋级</span></td><td>4</td><td>2</td><td>1</td><td>1</td><td>+2</td><td class="pts">7</td></tr>
+                            <tr><td><span class="rank-num r3">3</span></td><td class="rank-name">A2</td><td>4</td><td>1</td><td>0</td><td>3</td><td>-7</td><td class="pts" style="color:#c62828;">3</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card">
+                    <div class="card-title">B 组</div>
+                    <table class="rank-table">
+                        <thead><tr><th>#</th><th style="text-align:left;padding-left:6px;">队伍</th><th>场</th><th>胜</th><th>平</th><th>负</th><th>净胜</th><th>积分</th></tr></thead>
+                        <tbody>
+                            <tr><td><span class="rank-num r1">1</span></td><td class="rank-name">B1 <span class="qualify-tag q">晋级</span></td><td>4</td><td>3</td><td>1</td><td>0</td><td>+6</td><td class="pts">10</td></tr>
+                            <tr><td><span class="rank-num r2">2</span></td><td class="rank-name">B2 <span class="qualify-tag q">晋级</span></td><td>4</td><td>2</td><td>0</td><td>2</td><td>+1</td><td class="pts">6</td></tr>
+                            <tr><td><span class="rank-num r3">3</span></td><td class="rank-name">B3</td><td>4</td><td>0</td><td>1</td><td>3</td><td>-7</td><td class="pts" style="color:#c62828;">1</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="note"><strong>同积分规则：</strong>净胜球 → 总进球 → 直接对抗 → 点球</div>
+            </div>
+            <div class="tab-bar">
+                <div class="tab-item"><span class="tab-icon">🏠</span>主页</div>
+                <div class="tab-item"><span class="tab-icon">📅</span>赛程</div>
+                <div class="tab-item active"><span class="tab-icon">🏆</span>排名</div>
+                <div class="tab-item"><span class="tab-icon">👤</span>球员</div>
+            </div>
+        </div></div>
+        <div class="phone-label">C1 · 小组积分排名</div>
+    </div>
+
+    <!-- C2 淘汰赛对阵 -->
+    <div>
+        <div class="phone"><div class="screen">
+            <div class="status-bar"><span class="time">15:00</span><span>●●● WiFi 🔋</span></div>
+            <div class="bracket-header">
+                <div style="font-size:11px;opacity:0.8;">6v6 · 踢野球 Vol.12</div>
+                <div style="font-size:16px;font-weight:700;margin-top:2px;">🏆 淘汰赛对阵</div>
+            </div>
+            <div class="bracket-wrap">
+                <div class="bracket-section-title">半决赛 14:55 ~ 15:20（上下半场各10分）</div>
+                <div class="bracket-match">
+                    <div class="bracket-field-tag">1号场</div>
+                    <div class="bracket-team"><div><div class="bracket-team-name winner">A组第1（A3）</div><div style="font-size:10px;color:#999;">A组冠军</div></div><div class="bracket-score winner">2</div></div>
+                    <div class="bracket-team"><div><div class="bracket-team-name">B组第2（B2）</div><div style="font-size:10px;color:#999;">B组亚军</div></div><div class="bracket-score">1</div></div>
+                </div>
+                <div class="bracket-match">
+                    <div class="bracket-field-tag">2号场</div>
+                    <div class="bracket-team"><div><div class="bracket-team-name winner">B组第1（B1）</div><div style="font-size:10px;color:#999;">B组冠军</div></div><div class="bracket-score winner">3</div></div>
+                    <div class="bracket-team"><div><div class="bracket-team-name">A组第2（A1）</div><div style="font-size:10px;color:#999;">A组亚军</div></div><div class="bracket-score">2</div></div>
+                </div>
+                <div class="bracket-section-title" style="margin-top:12px;">决赛 15:25 ~ 15:55（上下半场各12分）</div>
+                <div class="champion-box">
+                    <div style="font-size:28px;">🏆</div>
+                    <div style="font-size:11px;color:#7a5000;font-weight:600;margin-top:4px;">冠军</div>
+                    <div style="font-size:16px;font-weight:800;color:#3e1e00;">待定</div>
+                </div>
+                <div class="bracket-match">
+                    <div class="bracket-field-tag">1号场 · 决赛</div>
+                    <div class="bracket-team"><div class="bracket-team-name">1号场胜者（A3）</div><div class="bracket-score bracket-tbd">-</div></div>
+                    <div class="bracket-team"><div class="bracket-team-name">2号场胜者（B1）</div><div class="bracket-score bracket-tbd">-</div></div>
+                </div>
+                <div class="bracket-section-title" style="margin-top:12px;">排位赛（同时进行）</div>
+                <div class="bracket-match">
+                    <div class="bracket-field-tag">2号场 · 三四名</div>
+                    <div class="bracket-team"><div class="bracket-team-name">1号场负者</div><div class="bracket-score bracket-tbd">-</div></div>
+                    <div class="bracket-team"><div class="bracket-team-name">2号场负者</div><div class="bracket-score bracket-tbd">-</div></div>
+                </div>
+                <div class="bracket-match">
+                    <div class="bracket-field-tag">2号场 · 五六名</div>
+                    <div class="bracket-team"><div class="bracket-team-name">A组第3（A2）</div><div class="bracket-score bracket-tbd">-</div></div>
+                    <div class="bracket-team"><div class="bracket-team-name">B组第3（B3）</div><div class="bracket-score bracket-tbd">-</div></div>
+                </div>
+                <div class="note" style="margin-top:8px;">决赛若打平 → 3+1+1+1 点球决胜</div>
+            </div>
+            <div class="tab-bar">
+                <div class="tab-item"><span class="tab-icon">🏠</span>主页</div>
+                <div class="tab-item"><span class="tab-icon">📅</span>赛程</div>
+                <div class="tab-item active"><span class="tab-icon">🏆</span>排名</div>
+                <div class="tab-item"><span class="tab-icon">👤</span>球员</div>
+            </div>
+        </div></div>
+        <div class="phone-label">C2 · 淘汰赛对阵表</div>
+    </div>
+
+</div>
+
+<div class="section">④ 球员统计（射手榜 &amp; 纪律榜）</div>
+<div class="phones-row">
+
+    <!-- D1 射手榜 -->
+    <div>
+        <div class="phone"><div class="screen">
+            <div class="status-bar"><span class="time">15:30</span><span>●●● WiFi 🔋</span></div>
+            <div class="nav-bar"><span class="title">球员统计</span></div>
+            <div class="stat-tabs">
+                <div class="stat-tab active">⚽ 射手榜</div>
+                <div class="stat-tab">🟨 纪律榜</div>
+                <div class="stat-tab">📊 表现</div>
+            </div>
+            <div class="body" style="padding-top:10px;">
+                <div class="card">
+                    <div class="player-row"><div class="player-rank-num top1">1</div><div class="player-avatar">😄</div><div class="player-info"><div class="player-name">赵六</div><div class="player-team">A2队</div></div><div class="player-count">5 ⚽</div></div>
+                    <div class="player-row"><div class="player-rank-num top2">2</div><div class="player-avatar">😎</div><div class="player-info"><div class="player-name">孙八</div><div class="player-team">B1队</div></div><div class="player-count">4 ⚽</div></div>
+                    <div class="player-row"><div class="player-rank-num top3">3</div><div class="player-avatar">🤩</div><div class="player-info"><div class="player-name">钱七</div><div class="player-team">A3队</div></div><div class="player-count">3 ⚽</div></div>
+                    <div class="player-row"><div class="player-rank-num rest">4</div><div class="player-avatar">😊</div><div class="player-info"><div class="player-name">周十</div><div class="player-team">B2队</div></div><div class="player-count">2 ⚽</div></div>
+                    <div class="player-row"><div class="player-rank-num rest">5</div><div class="player-avatar">🙂</div><div class="player-info"><div class="player-name">吴十一</div><div class="player-team">A1队</div></div><div class="player-count">2 ⚽</div></div>
+                </div>
+            </div>
+            <div class="tab-bar">
+                <div class="tab-item"><span class="tab-icon">🏠</span>主页</div>
+                <div class="tab-item"><span class="tab-icon">📅</span>赛程</div>
+                <div class="tab-item"><span class="tab-icon">🏆</span>排名</div>
+                <div class="tab-item active"><span class="tab-icon">👤</span>球员</div>
+            </div>
+        </div></div>
+        <div class="phone-label">D1 · 射手榜</div>
+    </div>
+
+    <!-- D2 纪律榜 -->
+    <div>
+        <div class="phone"><div class="screen">
+            <div class="status-bar"><span class="time">15:30</span><span>●●● WiFi 🔋</span></div>
+            <div class="nav-bar"><span class="title">球员统计</span></div>
+            <div class="stat-tabs">
+                <div class="stat-tab">⚽ 射手榜</div>
+                <div class="stat-tab active">🟨 纪律榜</div>
+                <div class="stat-tab">📊 表现</div>
+            </div>
+            <div class="body" style="padding-top:10px;">
+                <div class="card">
+                    <div class="card-title" style="color:#f57f17;">🟨 黄牌记录</div>
+                    <div class="player-row"><div class="player-rank-num top1">1</div><div class="player-avatar">😤</div><div class="player-info"><div class="player-name">张三</div><div class="player-team">A1队</div></div><div class="player-count" style="color:#f57f17;">2 🟨</div></div>
+                    <div class="player-row"><div class="player-rank-num top2">2</div><div class="player-avatar">😠</div><div class="player-info"><div class="player-name">李四</div><div class="player-team">B3队</div></div><div class="player-count" style="color:#f57f17;">1 🟨</div></div>
+                </div>
+                <div class="card">
+                    <div class="card-title" style="color:#c62828;">🟥 红牌记录</div>
+                    <div class="player-row"><div class="player-rank-num top1">1</div><div class="player-avatar">😡</div><div class="player-info"><div class="player-name">王五</div><div class="player-team">B2队</div></div><div class="player-count" style="color:#c62828;">1 🟥</div></div>
+                </div>
+                <div class="note"><strong>提示：</strong>累计2黄 = 1红；红牌球员本场以及下一场停赛</div>
+            </div>
+            <div class="tab-bar">
+                <div class="tab-item"><span class="tab-icon">🏠</span>主页</div>
+                <div class="tab-item"><span class="tab-icon">📅</span>赛程</div>
+                <div class="tab-item"><span class="tab-icon">🏆</span>排名</div>
+                <div class="tab-item active"><span class="tab-icon">👤</span>球员</div>
+            </div>
+        </div></div>
+        <div class="phone-label">D2 · 纪律榜（黄/红牌）</div>
+    </div>
+
+</div>
+
+<div class="section">⑤ 页面导航流程</div>
+<div class="flow-container">
+    <div class="flow-title">📐 小程序页面架构与用户流程</div>
+    <div style="overflow-x:auto;"><div style="min-width:680px;">
+        <div class="flow-row">
+            <div class="flow-node blue">启动<br><small>赛事列表</small></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">创建赛事<br><small>分组/球员</small></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">自动生成<br>赛程表</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node blue">主页<br><small>赛事概览</small></div>
+        </div>
+        <div style="text-align:center;color:#bbb;margin:6px 0;font-size:16px;">↓ Tab 底部导航</div>
+        <div class="flow-row" style="gap:16px;justify-content:center;">
+            <div class="flow-node" style="min-width:100px;">📅 赛程表</div>
+            <div class="flow-node" style="min-width:100px;">🏆 排名表</div>
+            <div class="flow-node" style="min-width:100px;">👤 球员统计</div>
+        </div>
+        <div style="text-align:center;color:#bbb;margin:6px 0;font-size:13px;">点击任意比赛 ↓</div>
+        <div class="flow-row">
+            <div class="flow-node red">实时比分录入<br><small>计时/比分/事件</small></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node gold">弹窗：进球<br><small>选球员</small></div>
+            <div class="flow-arrow">/</div>
+            <div class="flow-node gold">弹窗：牌<br><small>黄/红牌</small></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">结束比赛<br><small>自动更新排名</small></div>
+        </div>
+        <div style="text-align:center;color:#bbb;margin:6px 0;font-size:13px;">全部小组赛结束 ↓ 自动生成淘汰赛</div>
+        <div class="flow-row">
+            <div class="flow-node blue">半决赛对阵<br><small>自动填入</small></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node red">半决赛录入</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node blue">决赛+排位赛<br><small>自动生成</small></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node red">决赛录入</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node gold">🏆 最终排名<br><small>分享截图</small></div>
+        </div>
+    </div></div>
+</div>
+
+<div class="section">⑥ 核心数据模型</div>
+<div class="data-model">
+    <div class="data-card">
+        <div class="data-card-title">🏆 Tournament（赛事）</div>
+        <div class="data-field"><span class="field-type str">str</span> id, name, date</div>
+        <div class="data-field"><span class="field-type num">num</span> teamCount (6/8/10…)</div>
+        <div class="data-field"><span class="field-type num">num</span> fieldCount</div>
+        <div class="data-field"><span class="field-type str">str</span> status (setup/ongoing/done)</div>
+        <div class="data-field"><span class="field-type arr">arr</span> groups[ ]</div>
+        <div class="data-field"><span class="field-type arr">arr</span> rounds[ ]</div>
+    </div>
+    <div class="data-card">
+        <div class="data-card-title">👥 Team（队伍）</div>
+        <div class="data-field"><span class="field-type str">str</span> id, name</div>
+        <div class="data-field"><span class="field-type str">str</span> group ("A" / "B")</div>
+        <div class="data-field"><span class="field-type arr">arr</span> players[ ]</div>
+        <div class="data-field"><span class="field-type num">num</span> wins / draws / losses</div>
+        <div class="data-field"><span class="field-type num">num</span> goalsFor / goalsAgainst</div>
+        <div class="data-field"><span class="field-type num">num</span> points</div>
+    </div>
+    <div class="data-card">
+        <div class="data-card-title">👤 Player（球员）</div>
+        <div class="data-field"><span class="field-type str">str</span> id, name</div>
+        <div class="data-field"><span class="field-type ref">ref</span> teamId</div>
+        <div class="data-field"><span class="field-type num">num</span> goals, assists</div>
+        <div class="data-field"><span class="field-type num">num</span> yellowCards, redCards</div>
+        <div class="data-field"><span class="field-type bool">bool</span> suspended</div>
+    </div>
+    <div class="data-card">
+        <div class="data-card-title">⚽ Match（比赛）</div>
+        <div class="data-field"><span class="field-type str">str</span> id</div>
+        <div class="data-field"><span class="field-type str">str</span> stage (group/semi/final)</div>
+        <div class="data-field"><span class="field-type num">num</span> round, field</div>
+        <div class="data-field"><span class="field-type ref">ref</span> homeTeamId / awayTeamId</div>
+        <div class="data-field"><span class="field-type num">num</span> homeScore / awayScore</div>
+        <div class="data-field"><span class="field-type arr">arr</span> events[ ]</div>
+        <div class="data-field"><span class="field-type str">str</span> status (pending/live/done)</div>
+    </div>
+    <div class="data-card">
+        <div class="data-card-title">📝 MatchEvent（比赛事件）</div>
+        <div class="data-field"><span class="field-type str">str</span> type (goal/yellow/red/undo)</div>
+        <div class="data-field"><span class="field-type num">num</span> minute</div>
+        <div class="data-field"><span class="field-type ref">ref</span> playerId, assistPlayerId</div>
+        <div class="data-field"><span class="field-type ref">ref</span> matchId, teamId</div>
+        <div class="data-field"><span class="field-type str">str</span> timestamp</div>
+    </div>
+    <div class="data-card">
+        <div class="data-card-title">🔵 Round（轮次）</div>
+        <div class="data-field"><span class="field-type num">num</span> roundNumber</div>
+        <div class="data-field"><span class="field-type str">str</span> timeSlot</div>
+        <div class="data-field"><span class="field-type str">str</span> stage</div>
+        <div class="data-field"><span class="field-type num">num</span> duration (mins)</div>
+        <div class="data-field"><span class="field-type arr">arr</span> matches[ ], byeTeams[ ]</div>
+    </div>
+</div>
+
+<div class="section">⑦ 赛制说明与扩展</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:16px;">
+    <div class="flow-container" style="margin:0;">
+        <div class="flow-title">🔵 6队赛制（当前图片）</div>
+        <div style="font-size:12px;color:#444;line-height:2.2;">
+            <b>分组：</b>A组（A1/A2/A3）+ B组（B1/B2/B3）<br>
+            <b>场地：</b>2块同时进行，每轮1场轮空<br>
+            <b>小组赛：</b>6轮，主客场双循环<br>
+            &nbsp;&nbsp;→ 每队上场4次，轮空2次，每场12分钟<br>
+            <b>打平规则：</b>上位队罚1颗点球，进则胜，不进则对手胜<br>
+            <b>半决赛：</b>A组第1 vs B组第2；B组第1 vs A组第2<br>
+            &nbsp;&nbsp;→ 上下半场各10分钟<br>
+            <b>决赛：</b>上下半场各12分钟；平→3+1+1+1点球<br>
+            <b>三四名：</b>两个半决赛负者<br>
+            <b>五六名：</b>A组第3 vs B组第3
+        </div>
+    </div>
+    <div class="flow-container" style="margin:0;">
+        <div class="flow-title">🟢 扩展：8队赛制</div>
+        <div style="font-size:12px;color:#444;line-height:2.2;">
+            <b>方案A：</b>A/B两组各4队，组内循环<br>
+            <b>方案B：</b>A/B/C/D四组各2队<br>
+            <b>淘汰赛：</b>四强→半决赛→决赛<br>
+            <b>三四名赛：</b>半决赛负者<br>
+            <b>五至八名：</b>各组第2/3名排位<br>
+            <br>
+            <span style="color:#07c160;font-weight:700;">✅ 小程序支持动态配置队伍数量</span><br>
+            <span style="color:#07c160;font-weight:700;">✅ 自动按队数生成分组和赛程</span><br>
+            <span style="color:#07c160;font-weight:700;">✅ 赛制规则可在创建时灵活选择</span>
+        </div>
+    </div>
+    <div class="flow-container" style="margin:0;">
+        <div class="flow-title">⚡ 核心功能清单</div>
+        <div style="font-size:12px;color:#444;line-height:2.2;">
+            ✅ 一键生成完整赛程表<br>
+            ✅ 场内实时计时器<br>
+            ✅ 进球 / 黄牌 / 红牌 按钮录入<br>
+            ✅ 弹窗选择球员（归属进球/牌）<br>
+            ✅ 积分表自动实时更新<br>
+            ✅ 淘汰赛对阵图自动生成<br>
+            ✅ 小组赛打平→一键触发点球<br>
+            ✅ 射手榜 / 纪律榜实时统计<br>
+            ✅ 撤销最后一次操作<br>
+            ✅ 最终排名一键分享截图
+        </div>
+    </div>
+</div>
+
+<div style="text-align:center;color:#555;font-size:12px;margin-top:48px;padding-bottom:24px;">
+    ⚽ 踢野球记分小程序 · 线框设计稿 v1.0 &nbsp;|&nbsp; 2026-05-27
+</div>
+
+</body>
+</html>

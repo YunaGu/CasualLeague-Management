@@ -1,0 +1,369 @@
+.input {
+  border: 1rpx solid #e0e0e0;
+  border-radius: 8rpx;
+  padding: 16rpx 20rpx;
+  font-size: 28rpx;
+  background: #fafafa;
+}
+
+.picker-value {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1rpx solid #e0e0e0;
+  border-radius: 8rpx;
+  padding: 16rpx 20rpx;
+  font-size: 28rpx;
+  background: #fafafa;
+}
+
+.arrow {
+  color: #999;
+  font-size: 24rpx;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 120rpx;
+  border: 1rpx solid #e0e0e0;
+  border-radius: 8rpx;
+  padding: 16rpx 20rpx;
+  font-size: 28rpx;
+  background: #fafafa;
+  box-sizing: border-box;
+}
+
+.config-item {
+  margin-bottom: 18rpx;
+}
+
+.config-row {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 8rpx;
+}
+
+.config-col {
+  flex: 1;
+}
+
+.config-label {
+  font-size: 24rpx;
+  color: #666;
+  margin-bottom: 10rpx;
+}
+
+.team-list {
+  margin-top: 10rpx;
+}
+
+.team-item {
+  margin-bottom: 24rpx;
+  padding-bottom: 24rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.team-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.team-header {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.team-index {
+  width: 48rpx;
+  height: 48rpx;
+  background: #1AAD19;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.team-input {
+  flex: 1;
+  border: 1rpx solid #e0e0e0;
+  border-radius: 8rpx;
+  padding: 12rpx 16rpx;
+  font-size: 28rpx;
+  background: #fafafa;
+}
+
+.btn-add-player {
+  background: #e8f5e9;
+  color: #1AAD19;
+  padding: 10rpx 20rpx;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  white-space: nowrap;
+}
+
+.player-tags {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 12rpx;
+  padding-left: 64rpx;
+  gap: 10rpx;
+}
+
+.player-tag {
+  background: #f5f5f5;
+  padding: 6rpx 16rpx;
+  border-radius: 20rpx;
+  font-size: 22rpx;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.remove-btn {
+  color: #e53935;
+  font-size: 28rpx;
+  padding: 0 4rpx;
+}
+
+.submit-btn {
+  margin-top: 30rpx;
+  margin-bottom: 60rpx;
+}
+
+/* 弹窗 */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 20rpx;
+  width: 85%;
+  max-height: 70vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  padding: 30rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+  text-align: center;
+}
+
+.modal-body {
+  padding: 30rpx;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.input-group {
+  display: flex;
+  gap: 12rpx;
+  align-items: center;
+}
+
+.input-group .input {
+  flex: 1;
+}
+
+.input-short {
+  width: 120rpx !important;
+  flex: none !important;
+}
+
+.btn-add {
+  width: 60rpx;
+  height: 60rpx;
+  background: #1AAD19;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
+  flex-shrink: 0;
+}
+
+.modal-player-list {
+  margin-top: 20rpx;
+}
+
+.modal-player-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #f5f5f5;
+  font-size: 28rpx;
+}
+
+.modal-footer {
+  padding: 20rpx 30rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.modal-footer .btn-primary {
+  margin: 0;
+}
+
+/* ===== 分组步骤样式 ===== */
+.grouping-header {
+  text-align: center;
+}
+
+.grouping-tip {
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 20rpx;
+}
+
+.grouping-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.btn-random {
+  background: #fff3e0;
+  color: #e65100;
+  border: none;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  padding: 16rpx 40rpx;
+}
+
+.btn-random::after {
+  border: none;
+}
+
+/* 未分配列表 */
+.unassigned-list {
+  margin-top: 10rpx;
+}
+
+.unassigned-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f5f5f5;
+}
+
+.unassigned-item:last-child {
+  border-bottom: none;
+}
+
+.unassigned-name {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+.assign-btns {
+  display: flex;
+  gap: 16rpx;
+}
+
+.assign-btn {
+  font-size: 24rpx;
+  padding: 10rpx 20rpx;
+  border-radius: 8rpx;
+  font-weight: 500;
+}
+
+.btn-a {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.btn-b {
+  background: #fce4ec;
+  color: #c62828;
+}
+
+/* 分组容器 */
+.groups-container {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.group-card {
+  flex: 1;
+  padding: 24rpx 20rpx;
+}
+
+.group-label {
+  font-size: 28rpx;
+  font-weight: 700;
+  margin-bottom: 16rpx;
+  padding-bottom: 12rpx;
+  border-bottom: 2rpx solid #f0f0f0;
+}
+
+.group-a {
+  color: #1565c0;
+}
+
+.group-b {
+  color: #c62828;
+}
+
+.group-empty {
+  text-align: center;
+  color: #ccc;
+  font-size: 24rpx;
+  padding: 30rpx 0;
+}
+
+.group-team {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14rpx 0;
+  border-bottom: 1rpx solid #f8f8f8;
+}
+
+.group-team:last-child {
+  border-bottom: none;
+}
+
+.group-team-name {
+  font-size: 26rpx;
+  color: #333;
+}
+
+.group-team-remove {
+  color: #e53935;
+  font-size: 32rpx;
+  padding: 0 10rpx;
+}
+
+/* 步骤2按钮 */
+.step2-buttons {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 60rpx;
+}
+
+.step2-buttons button {
+  flex: 1;
+}

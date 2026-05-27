@@ -1,0 +1,50 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/schedule/schedule",
+    "pages/ranking/ranking",
+    "pages/players/players",
+    "pages/create/create",
+    "pages/match/match"
+  ],
+  "window": {
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "足球赛事",
+    "navigationBarBackgroundColor": "#1AAD19",
+    "backgroundColor": "#f5f5f5"
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#1AAD19",
+    "backgroundColor": "#ffffff",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "主页",
+        "iconPath": "image/tab_home.png",
+        "selectedIconPath": "image/tab_home_active.png"
+      },
+      {
+        "pagePath": "pages/schedule/schedule",
+        "text": "赛程",
+        "iconPath": "image/tab_schedule.png",
+        "selectedIconPath": "image/tab_schedule_active.png"
+      },
+      {
+        "pagePath": "pages/ranking/ranking",
+        "text": "排名",
+        "iconPath": "image/tab_ranking.png",
+        "selectedIconPath": "image/tab_ranking_active.png"
+      },
+      {
+        "pagePath": "pages/players/players",
+        "text": "球员",
+        "iconPath": "image/tab_players.png",
+        "selectedIconPath": "image/tab_players_active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

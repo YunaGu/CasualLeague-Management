@@ -1,0 +1,183 @@
+<view class="container" wx:if="{{match}}">
+  <!-- 比分面板 -->
+  <view class="score-panel card">
+    <view class="match-stage-label">
+      {{match.stage === 'group' ? match.group + '组' : match.matchLabel || match.stage}}
+    </view>
+    <view class="score-board">
+      <view class="team-side">
+        <text class="team-name-large">{{homeTeam.name}}</text>
+        <text class="team-label">主</text>
+      </view>
+      <view class="score-center">
+        <block wx:if="{{match.status === 'pending'}}">
+          <text class="score-large pending">VS</text>
+        </block>
+        <block wx:else>
+          <text class="score-large">{{match.homeScore}}</text>
+          <text class="score-colon">:</text>
+          <text class="score-large">{{match.awayScore}}</text>
+        </block>
+      </view>
+      <view class="team-side">
+        <text class="team-name-large">{{awayTeam.name}}</text>
+        <text class="team-label">客</text>
+      </view>
+    </view>
+    <view class="match-status">
+      <text class="tag {{match.status === 'playing' ? 'tag-red' : match.status === 'finished' ? 'tag-gray' : 'tag-blue'}}">
+        {{match.status === 'playing' ? '进行中' : match.status === 'finished' ? '已结束' : '未开始'}}
+      </text>
+      <text class="elapsed-time" wx:if="{{match.status !== 'pending'}}">已进行 {{elapsedText}}</text>
+    </view>
+    <view class="penalty-result" wx:if="{{match.status === 'finished' && match.penaltyHomeScore >= 0 && match.penaltyAwayScore >= 0}}">
+      <text>点球 {{match.penaltyHomeScore}} : {{match.penaltyAwayScore}}</text>
+      <text wx:if="{{match.penaltyRule}}">（{{match.penaltyRule}}）</text>
+    </view>
+    <view class="penalty-note" wx:if="{{match.status === 'finished' && match.penaltyNote}}">{{match.penaltyNote}}</view>
+  </view>
+
+  <!-- 操作按钮 -->
+  <view class="action-buttons" wx:if="{{match.status !== 'finished'}}">
+    <button class="btn-primary" wx:if="{{match.status === 'pending'}}" bindtap="startMatch">开始比赛</button>
+    <block wx:if="{{match.status === 'playing'}}">
+      <view class="event-buttons">
+        <view class="event-btn goal" bindtap="openEventModal" data-type="goal" data-team="{{homeTeam.id}}">
+          <text class="event-btn-icon">⚽</text>
+          <text class="event-btn-text">{{homeTeam.name}}进球</text>
+        </view>
+        <view class="event-btn goal" bindtap="openEventModal" data-type="goal" data-team="{{awayTeam.id}}">
+          <text class="event-btn-icon">⚽</text>
+          <text class="event-btn-text">{{awayTeam.name}}进球</text>
+        </view>
+      </view>
+      <view class="event-buttons">
+        <view class="event-btn yellow" bindtap="openEventModal" data-type="yellow" data-team="">
+          <text class="event-btn-icon">🟡</text>
+          <text class="event-btn-text">黄牌</text>
+        </view>
+        <view class="event-btn red" bindtap="openEventModal" data-type="red" data-team="">
+          <text class="event-btn-icon">🔴</text>
+          <text class="event-btn-text">红牌</text>
+        </view>
+      </view>
+      <button class="btn-finish" bindtap="finishMatch">结束比赛</button>
+    </block>
+  </view>
+
+  <!-- 比赛事件时间线 -->
+  <view class="card" wx:if="{{events.length > 0}}">
+    <view class="section-title">比赛事件</view>
+    <view class="timeline">
+      <view class="timeline-item" wx:for="{{events}}" wx:key="id">
+        <view class="timeline-icon">{{item.icon}}</view>
+        <view class="timeline-content">
+          <view class="timeline-main">
+            <text class="timeline-player">#{{item.playerNumber}} {{item.playerName}}</text>
+            <text class="timeline-team">{{item.teamName}}</text>
+          </view>
+          <text class="timeline-minute" wx:if="{{item.minute}}">{{item.minute}}'</text>
+        </view>
+        <view class="timeline-delete" bindtap="removeEvent" data-event-id="{{item.id}}" wx:if="{{match.status === 'playing'}}">
+          <text>×</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 点球结算弹窗 -->
+<view class="modal-mask" wx:if="{{showPenaltyModal}}" bindtap="closePenaltyModal">
+  <view class="modal-content" catchtap="noop">
+    <view class="modal-title">排位赛平局，请记录点球</view>
+    <view class="modal-body">
+      <view class="modal-section">
+        <view class="modal-label">点球规则</view>
+        <input class="input" placeholder="默认 3+1+1+1" value="{{penaltyRule}}" bindinput="onPenaltyRuleInput" />
+      </view>
+      <view class="modal-section">
+        <view class="modal-label">逐脚记录（绿=进，红=失）</view>
+        <view class="penalty-score-row">
+          <view class="penalty-team">
+            <text class="penalty-team-name">{{homeTeam.name}}</text>
+            <view class="penalty-shots">
+              <view class="shot {{item ? 'hit' : 'miss'}}" wx:for="{{penaltyHomeShots}}" wx:key="index">{{item ? '进' : '失'}}</view>
+            </view>
+            <view class="penalty-actions">
+              <view class="penalty-btn success" bindtap="addPenaltyShot" data-team="home" data-success="1">+进</view>
+              <view class="penalty-btn fail" bindtap="addPenaltyShot" data-team="home" data-success="0">+失</view>
+              <view class="penalty-btn undo" bindtap="undoPenaltyShot" data-team="home">撤销</view>
+            </view>
+          </view>
+          <text class="penalty-sep">{{penaltyHomeCount}} : {{penaltyAwayCount}}</text>
+          <view class="penalty-team">
+            <text class="penalty-team-name">{{awayTeam.name}}</text>
+            <view class="penalty-shots">
+              <view class="shot {{item ? 'hit' : 'miss'}}" wx:for="{{penaltyAwayShots}}" wx:key="index">{{item ? '进' : '失'}}</view>
+            </view>
+            <view class="penalty-actions">
+              <view class="penalty-btn success" bindtap="addPenaltyShot" data-team="away" data-success="1">+进</view>
+              <view class="penalty-btn fail" bindtap="addPenaltyShot" data-team="away" data-success="0">+失</view>
+              <view class="penalty-btn undo" bindtap="undoPenaltyShot" data-team="away">撤销</view>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="modal-section">
+        <view class="modal-label">备注（可选，自定义过程）</view>
+        <textarea class="penalty-note-input" placeholder="例如：前3轮 2:2，进入 sudden death，最终 5:4" value="{{penaltyNote}}" bindinput="onPenaltyNoteInput" auto-height="true" />
+      </view>
+    </view>
+    <view class="modal-footer">
+      <button class="btn-cancel" bindtap="closePenaltyModal">取消</button>
+      <button class="btn-primary btn-confirm" bindtap="confirmPenaltyFinish">确认结束</button>
+    </view>
+  </view>
+</view>
+
+<!-- 事件记录弹窗 -->
+<view class="modal-mask" wx:if="{{showEventModal}}" bindtap="closeEventModal">
+  <view class="modal-content" catchtap="noop">
+    <view class="modal-title">
+      记录{{eventType === 'goal' ? '进球' : eventType === 'yellow' ? '黄牌' : '红牌'}}
+    </view>
+    <view class="modal-body">
+      <!-- 事件类型选择 -->
+      <view class="type-selector">
+        <view class="type-btn {{eventType === 'goal' ? 'active' : ''}}" bindtap="onEventTypeChange" data-type="goal">⚽ 进球</view>
+        <view class="type-btn {{eventType === 'yellow' ? 'active' : ''}}" bindtap="onEventTypeChange" data-type="yellow">🟡 黄牌</view>
+        <view class="type-btn {{eventType === 'red' ? 'active' : ''}}" bindtap="onEventTypeChange" data-type="red">🔴 红牌</view>
+      </view>
+
+      <!-- 选择球队 -->
+      <view class="modal-section">
+        <view class="modal-label">选择球队</view>
+        <view class="team-selector">
+          <view class="team-option {{eventTeamId === homeTeam.id ? 'active' : ''}}" 
+                bindtap="onTeamSelect" data-team="{{homeTeam.id}}">
+            {{homeTeam.name}}
+          </view>
+          <view class="team-option {{eventTeamId === awayTeam.id ? 'active' : ''}}" 
+                bindtap="onTeamSelect" data-team="{{awayTeam.id}}">
+            {{awayTeam.name}}
+          </view>
+        </view>
+      </view>
+
+      <!-- 输入号码 -->
+      <view class="modal-section">
+        <view class="modal-label">球员号码</view>
+        <input class="input minute-input" type="number" placeholder="例如 10" value="{{eventPlayerNumber}}" bindinput="onPlayerNumberInput" />
+      </view>
+
+      <view class="modal-section">
+        <view class="modal-label">记录时间</view>
+        <view class="auto-minute">自动记录为第 {{elapsedMinute}} 分钟（当前已进行 {{elapsedText}}）</view>
+      </view>
+    </view>
+    <view class="modal-footer">
+      <button class="btn-cancel" bindtap="closeEventModal">取消</button>
+      <button class="btn-primary btn-confirm" bindtap="confirmEvent">确认</button>
+    </view>
+  </view>
+</view>

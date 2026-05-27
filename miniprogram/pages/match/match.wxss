@@ -1,0 +1,463 @@
+/* 比分面板 */
+.score-panel {
+  text-align: center;
+  padding: 40rpx 30rpx;
+}
+
+.match-stage-label {
+  font-size: 24rpx;
+  color: #999;
+  margin-bottom: 20rpx;
+}
+
+.score-board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.team-side {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.team-name-large {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.team-label {
+  font-size: 20rpx;
+  color: #999;
+  background: #f5f5f5;
+  padding: 2rpx 16rpx;
+  border-radius: 10rpx;
+}
+
+.score-center {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 0 30rpx;
+}
+
+.score-large {
+  font-size: 64rpx;
+  font-weight: 800;
+  color: #333;
+}
+
+.score-large.pending {
+  font-size: 36rpx;
+  color: #ccc;
+}
+
+.score-colon {
+  font-size: 48rpx;
+  color: #999;
+}
+
+.match-status {
+  margin-top: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+}
+
+.elapsed-time {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.penalty-result {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  color: #2e7d32;
+  font-weight: 600;
+}
+
+.penalty-note {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #666;
+}
+
+/* 操作按钮 */
+.action-buttons {
+  margin-bottom: 20rpx;
+}
+
+.event-buttons {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+}
+
+.event-btn {
+  flex: 1;
+  background: #fff;
+  border-radius: 12rpx;
+  padding: 24rpx 16rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+
+.event-btn-icon {
+  font-size: 40rpx;
+}
+
+.event-btn-text {
+  font-size: 24rpx;
+  color: #333;
+}
+
+.btn-finish {
+  background: #ff5722;
+  color: #fff;
+  border-radius: 12rpx;
+  font-size: 30rpx;
+  padding: 20rpx 0;
+  margin-top: 10rpx;
+  border: none;
+}
+
+.btn-finish::after {
+  border: none;
+}
+
+/* 时间线 */
+.timeline {
+  padding-left: 10rpx;
+}
+
+.timeline-item {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #f5f5f5;
+}
+
+.timeline-item:last-child {
+  border-bottom: none;
+}
+
+.timeline-icon {
+  font-size: 32rpx;
+  margin-right: 16rpx;
+  flex-shrink: 0;
+}
+
+.timeline-content {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.timeline-main {
+  display: flex;
+  flex-direction: column;
+}
+
+.timeline-player {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+.timeline-team {
+  font-size: 22rpx;
+  color: #999;
+}
+
+.timeline-minute {
+  font-size: 24rpx;
+  color: #666;
+  background: #f5f5f5;
+  padding: 4rpx 16rpx;
+  border-radius: 16rpx;
+}
+
+.timeline-delete {
+  margin-left: 16rpx;
+  color: #e53935;
+  font-size: 36rpx;
+  padding: 0 10rpx;
+}
+
+/* 弹窗 */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 24rpx 24rpx 0 0;
+  width: 100%;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  padding: 30rpx;
+  text-align: center;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.modal-body {
+  padding: 30rpx;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-section {
+  margin-bottom: 30rpx;
+}
+
+.modal-label {
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 12rpx;
+}
+
+/* 类型选择 */
+.type-selector {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 30rpx;
+}
+
+.type-btn {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 8rpx;
+  font-size: 26rpx;
+}
+
+.type-btn.active {
+  border-color: #1AAD19;
+  background: #e8f5e9;
+  color: #1AAD19;
+}
+
+/* 球队选择 */
+.team-selector {
+  display: flex;
+  gap: 16rpx;
+}
+
+.team-option {
+  flex: 1;
+  text-align: center;
+  padding: 20rpx;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 8rpx;
+  font-size: 28rpx;
+}
+
+.team-option.active {
+  border-color: #1AAD19;
+  background: #e8f5e9;
+  color: #1AAD19;
+  font-weight: 600;
+}
+
+/* 球员网格 */
+.player-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.player-option {
+  padding: 12rpx 20rpx;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 8rpx;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.player-option.active {
+  border-color: #1AAD19;
+  background: #e8f5e9;
+}
+
+.player-num {
+  font-size: 22rpx;
+  color: #999;
+  font-weight: 600;
+}
+
+.player-name-small {
+  font-size: 26rpx;
+  color: #333;
+}
+
+.empty-tip {
+  text-align: center;
+  color: #999;
+  font-size: 26rpx;
+  padding: 20rpx;
+}
+
+.minute-input {
+  width: 200rpx;
+  border: 1rpx solid #e0e0e0;
+  border-radius: 8rpx;
+  padding: 16rpx 20rpx;
+  font-size: 28rpx;
+  background: #fafafa;
+}
+
+.auto-minute {
+  font-size: 26rpx;
+  color: #666;
+  background: #f7f7f7;
+  border-radius: 8rpx;
+  padding: 14rpx 16rpx;
+}
+
+.penalty-score-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.penalty-team {
+  flex: 1;
+}
+
+.penalty-team-name {
+  display: block;
+  font-size: 24rpx;
+  color: #666;
+  margin-bottom: 8rpx;
+}
+
+.penalty-shots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  min-height: 48rpx;
+}
+
+.shot {
+  min-width: 52rpx;
+  height: 40rpx;
+  padding: 0 10rpx;
+  border-radius: 8rpx;
+  font-size: 22rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shot.hit {
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
+.shot.miss {
+  background: #ffebee;
+  color: #b71c1c;
+}
+
+.penalty-actions {
+  display: flex;
+  gap: 8rpx;
+  margin-top: 10rpx;
+}
+
+.penalty-btn {
+  flex: 1;
+  text-align: center;
+  padding: 10rpx 0;
+  border-radius: 8rpx;
+  font-size: 22rpx;
+}
+
+.penalty-btn.success {
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
+.penalty-btn.fail {
+  background: #ffebee;
+  color: #b71c1c;
+}
+
+.penalty-btn.undo {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.penalty-sep {
+  font-size: 40rpx;
+  color: #999;
+  margin-top: 24rpx;
+}
+
+.penalty-input {
+  width: auto;
+}
+
+.penalty-note-input {
+  width: 100%;
+  min-height: 120rpx;
+  border: 1rpx solid #e0e0e0;
+  border-radius: 8rpx;
+  padding: 16rpx;
+  box-sizing: border-box;
+  font-size: 26rpx;
+  background: #fafafa;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 20rpx;
+  padding: 20rpx 30rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.btn-cancel {
+  flex: 1;
+  background: #f5f5f5;
+  color: #666;
+  border-radius: 12rpx;
+  font-size: 30rpx;
+  padding: 20rpx 0;
+  border: none;
+}
+
+.btn-cancel::after {
+  border: none;
+}
+
+.btn-confirm {
+  flex: 1;
+  margin: 0;
+}

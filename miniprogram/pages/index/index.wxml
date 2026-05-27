@@ -1,0 +1,80 @@
+<view class="container">
+  <!-- 无赛事时的空状态 -->
+  <view class="empty-state" wx:if="{{!currentTournament}}">
+    <text class="icon">⚽</text>
+    <text class="text">暂无赛事</text>
+    <text class="text" style="margin-top: 10rpx; font-size: 26rpx;">点击下方按钮创建第一个赛事</text>
+    <button class="btn-primary" style="margin-top: 40rpx; width: 60%;" bindtap="goCreate">创建赛事</button>
+  </view>
+
+  <!-- 有赛事时的主页 -->
+  <block wx:if="{{currentTournament}}">
+    <!-- 赛事概览 -->
+    <view class="card tournament-header">
+      <view class="flex-between">
+        <view>
+          <view class="tournament-name">{{currentTournament.name}}</view>
+          <view class="tournament-stage tag tag-green">
+            {{currentTournament.stage === 'group' ? '小组赛' : currentTournament.stage === 'semi' ? '半决赛' : currentTournament.stage === 'final' ? '决赛' : currentTournament.stage === 'placement' ? '排位赛' : currentTournament.stage === 'finished' ? '已结束' : '进行中'}}
+          </view>
+        </view>
+        <view class="team-count">
+          <text class="count-num">{{currentTournament.teamCount}}</text>
+          <text class="count-label">支球队</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 最近比赛 -->
+    <view class="card" wx:if="{{recentMatches.length > 0}}">
+      <view class="section-title">最近比赛</view>
+      <view class="match-item" wx:for="{{recentMatches}}" wx:key="id">
+        <view class="match-teams">
+          <text class="team-name home">{{item.homeTeamName}}</text>
+          <view class="match-score">
+            <text class="score">{{item.homeScore}}</text>
+            <text class="score-sep">:</text>
+            <text class="score">{{item.awayScore}}</text>
+          </view>
+          <text class="team-name away">{{item.awayTeamName}}</text>
+        </view>
+        <view class="match-meta">
+          <text class="tag tag-gray">{{item.stage === 'group' ? item.group + '组' : item.matchLabel || item.stage}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 即将开始 -->
+    <view class="card" wx:if="{{nextMatches.length > 0}}">
+      <view class="section-title">即将进行</view>
+      <view class="match-item" wx:for="{{nextMatches}}" wx:key="id">
+        <view class="match-teams">
+          <text class="team-name home">{{item.homeTeamName}}</text>
+          <view class="match-score pending">
+            <text>vs</text>
+          </view>
+          <text class="team-name away">{{item.awayTeamName}}</text>
+        </view>
+        <view class="match-meta">
+          <text class="tag tag-blue">{{item.stage === 'group' ? item.group + '组' : item.matchLabel || item.stage}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 赛事列表/切换 -->
+    <view class="card" wx:if="{{tournaments.length > 1}}">
+      <view class="section-title">所有赛事</view>
+      <view class="tournament-list">
+        <view class="tournament-item {{item.id === currentTournament.id ? 'active' : ''}}" 
+              wx:for="{{tournaments}}" wx:key="id"
+              bindtap="switchTournament" data-id="{{item.id}}">
+          <text class="tournament-item-name">{{item.name}}</text>
+          <text class="tournament-item-count">{{item.teamCount}}队</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 新建赛事按钮 -->
+    <button class="btn-secondary" style="margin-top: 20rpx;" bindtap="goCreate">+ 新建赛事</button>
+  </block>
+</view>

@@ -1,0 +1,159 @@
+<view class="container">
+  <!-- ===== 步骤1：填写信息 ===== -->
+  <block wx:if="{{step === 1}}">
+    <!-- 赛事名称 -->
+    <view class="card">
+      <view class="section-title">赛事名称</view>
+      <input class="input" placeholder="请输入赛事名称" value="{{name}}" bindinput="onNameInput" />
+    </view>
+
+    <!-- 赛制与场地配置 -->
+    <view class="card">
+      <view class="section-title">场地与时间配置</view>
+      <view class="config-item">
+        <view class="config-label">场地列表（每行一个）</view>
+        <textarea class="textarea" placeholder="例如：\n奥森南园7号场\n奥森南园8号场" value="{{venueText}}" bindinput="onVenueTextInput" auto-height="true" />
+      </view>
+      <view class="config-row">
+        <view class="config-col">
+          <view class="config-label">开赛时间</view>
+          <input class="input" placeholder="09:00" value="{{startTime}}" bindinput="onStartTimeInput" />
+        </view>
+        <view class="config-col">
+          <view class="config-label">场间间隔(分钟)</view>
+          <input class="input" type="number" value="{{breakMinutes}}" bindinput="onBreakMinutesInput" />
+        </view>
+      </view>
+      <view class="config-row">
+        <view class="config-col">
+          <view class="config-label">小组赛每场(分钟)</view>
+          <input class="input" type="number" value="{{groupMatchMinutes}}" bindinput="onGroupMinutesInput" />
+        </view>
+        <view class="config-col">
+          <view class="config-label">排位赛每场(分钟)</view>
+          <input class="input" type="number" value="{{knockoutMatchMinutes}}" bindinput="onKnockoutMinutesInput" />
+        </view>
+      </view>
+    </view>
+
+    <!-- 队伍数量 -->
+    <view class="card">
+      <view class="section-title">参赛队伍数量</view>
+      <picker mode="selector" range="{{teamCountOptions}}" bindchange="onTeamCountChange">
+        <view class="picker-value">
+          <text>{{teamCount}} 支球队</text>
+          <text class="arrow">▼</text>
+        </view>
+      </picker>
+    </view>
+
+    <!-- 球队列表 -->
+    <view class="card">
+      <view class="section-title">球队信息</view>
+      <view class="team-list">
+        <view class="team-item" wx:for="{{teams}}" wx:key="index" wx:if="{{index < teamCount}}">
+          <view class="team-header">
+            <text class="team-index">{{index + 1}}</text>
+            <input class="team-input" placeholder="球队名称" value="{{item.name}}" data-index="{{index}}" bindinput="onTeamNameInput" />
+            <view class="btn-add-player" bindtap="openPlayerModal" data-index="{{index}}">
+              <text>球员({{item.players.length}})</text>
+            </view>
+          </view>
+          <!-- 球员列表预览 -->
+          <view class="player-tags" wx:if="{{item.players.length > 0}}">
+            <view class="player-tag" wx:for="{{item.players}}" wx:for-item="player" wx:for-index="pIdx" wx:key="pIdx">
+              <text>#{{player.number}} {{player.name}}</text>
+              <text class="remove-btn" bindtap="removePlayer" data-team-index="{{index}}" data-player-index="{{pIdx}}">×</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 下一步按钮 -->
+    <button class="btn-primary submit-btn" bindtap="goToGrouping">下一步：分组</button>
+  </block>
+
+  <!-- ===== 步骤2：分组 ===== -->
+  <block wx:if="{{step === 2}}">
+    <!-- 操作提示 -->
+    <view class="card grouping-header">
+      <view class="section-title">球队分组</view>
+      <view class="grouping-tip">点击球队名称选择分入 A 组或 B 组，或点击"随机分配"</view>
+      <view class="grouping-actions">
+        <button class="btn-random" bindtap="randomAssign">🎲 随机分配剩余球队</button>
+      </view>
+    </view>
+
+    <!-- 未分配球队 -->
+    <view class="card" wx:if="{{unassigned.length > 0}}">
+      <view class="section-title">待分配 ({{unassigned.length}})</view>
+      <view class="unassigned-list">
+        <view class="unassigned-item" wx:for="{{unassigned}}" wx:key="*this">
+          <text class="unassigned-name">{{teams[item].name}}</text>
+          <view class="assign-btns">
+            <view class="assign-btn btn-a" bindtap="assignToA" data-index="{{item}}">→ A组</view>
+            <view class="assign-btn btn-b" bindtap="assignToB" data-index="{{item}}">→ B组</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 分组结果 -->
+    <view class="groups-container">
+      <!-- A 组 -->
+      <view class="group-card card">
+        <view class="group-label group-a">A 组 ({{groupA.length}}/{{teamCount / 2}})</view>
+        <view class="group-empty" wx:if="{{groupA.length === 0}}">
+          <text>暂无球队</text>
+        </view>
+        <view class="group-team" wx:for="{{groupA}}" wx:key="*this">
+          <text class="group-team-name">{{teams[item].name}}</text>
+          <text class="group-team-remove" bindtap="unassignTeam" data-index="{{item}}">×</text>
+        </view>
+      </view>
+
+      <!-- B 组 -->
+      <view class="group-card card">
+        <view class="group-label group-b">B 组 ({{groupB.length}}/{{teamCount / 2}})</view>
+        <view class="group-empty" wx:if="{{groupB.length === 0}}">
+          <text>暂无球队</text>
+        </view>
+        <view class="group-team" wx:for="{{groupB}}" wx:key="*this">
+          <text class="group-team-name">{{teams[item].name}}</text>
+          <text class="group-team-remove" bindtap="unassignTeam" data-index="{{item}}">×</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 操作按钮 -->
+    <view class="step2-buttons">
+      <button class="btn-secondary" bindtap="goBackToStep1">上一步</button>
+      <button class="btn-primary" bindtap="onSubmit">创建赛事</button>
+    </view>
+  </block>
+</view>
+
+<!-- 添加球员弹窗 -->
+<view class="modal-mask" wx:if="{{showPlayerModal}}" bindtap="closePlayerModal">
+  <view class="modal-content" catchtap="noop">
+    <view class="modal-title">添加球员 - {{teams[currentTeamIndex].name || '球队' + (currentTeamIndex + 1)}}</view>
+    <view class="modal-body">
+      <view class="input-group">
+        <input class="input" placeholder="球员姓名" value="{{newPlayerName}}" bindinput="onPlayerNameInput" />
+        <input class="input input-short" placeholder="号码" type="number" value="{{newPlayerNumber}}" bindinput="onPlayerNumberInput" />
+        <view class="btn-add" bindtap="addPlayer">+</view>
+      </view>
+      <!-- 已添加的球员 -->
+      <view class="modal-player-list" wx:if="{{currentTeamIndex >= 0}}">
+        <view class="modal-player-item" wx:for="{{teams[currentTeamIndex].players}}" wx:key="index">
+          <text>#{{item.number}} {{item.name}}</text>
+          <text class="remove-btn" bindtap="removePlayer" data-team-index="{{currentTeamIndex}}" data-player-index="{{index}}">×</text>
+        </view>
+      </view>
+    </view>
+    <view class="modal-footer">
+      <button class="btn-primary" bindtap="closePlayerModal">完成</button>
+    </view>
+  </view>
+</view>
