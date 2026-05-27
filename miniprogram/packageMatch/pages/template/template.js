@@ -60,7 +60,7 @@ Page({
 
     // 跳转到创建页面并传递模板ID
     wx.navigateTo({
-      url: `/pages/create/create?templateId=${selectedTemplateId}`
+      url: `/packageMatch/pages/create/create?templateId=${selectedTemplateId}`
     })
   },
 
@@ -72,7 +72,7 @@ Page({
     if (!templateId) return
 
     wx.navigateTo({
-      url: `/pages/template-create/template-create?templateId=${templateId}`
+      url: `/packageMatch/pages/template-create/template-create?templateId=${templateId}`
     })
   },
 
@@ -170,22 +170,6 @@ Page({
     const h = String(date.getHours()).padStart(2, '0')
     const mi = String(date.getMinutes()).padStart(2, '0')
     return `${y}-${m}-${d} ${h}:${mi}`
-  },
-
-  /**
-   * 导出模板（作为备份）
-   */
-  exportTemplate(e) {
-    const templateId = e.currentTarget.dataset.templateId
-    const template = tournament.getTemplate(templateId)
-    if (!template) return
-
-    wx.setClipboardData({
-      data: JSON.stringify(template),
-      success() {
-        wx.showToast({ title: '已复制到剪贴板', icon: 'success' })
-      }
-    })
   },
 
   /**

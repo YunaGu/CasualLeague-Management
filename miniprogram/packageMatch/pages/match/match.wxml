@@ -25,9 +25,7 @@
       </view>
     </view>
     <view class="match-status">
-      <text class="tag {{match.status === 'playing' ? 'tag-red' : match.status === 'finished' ? 'tag-gray' : 'tag-blue'}}">
-        {{match.status === 'playing' ? '进行中' : match.status === 'finished' ? '已结束' : '未开始'}}
-      </text>
+      <text class="tag {{match.status === 'playing' ? 'tag-red' : match.status === 'finished' ? 'tag-gray' : 'tag-blue'}}">{{match.status === 'playing' ? '进行中' : match.status === 'finished' ? '已结束' : '未开始'}}</text>
       <text class="elapsed-time" wx:if="{{match.status !== 'pending'}}">已进行 {{elapsedText}}</text>
     </view>
     <view class="penalty-result" wx:if="{{match.status === 'finished' && match.penaltyHomeScore >= 0 && match.penaltyAwayScore >= 0}}">

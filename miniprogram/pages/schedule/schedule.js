@@ -43,6 +43,7 @@ Page({
         awayTeamName: this.getDisplayTeamName(m, 'away', current),
         scheduleText: this.getScheduleText(m, current),
         penaltyText: this.getPenaltyText(m),
+        eventPreview: this.getEventPreview(m, current)
       })
     })
     const rounds = Object.keys(roundMap)

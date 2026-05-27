@@ -45,12 +45,6 @@
               catchbubble
             >✏️</text>
             <text 
-              class="action-btn copy-btn"
-              bindtap="exportTemplate"
-              data-template-id="{{item.id}}"
-              catchbubble
-            >📋</text>
-            <text 
               class="action-btn delete-btn"
               bindtap="showDeleteConfirm"
               data-template-id="{{item.id}}"

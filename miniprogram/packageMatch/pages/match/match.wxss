@@ -67,6 +67,7 @@
   align-items: center;
   justify-content: center;
   gap: 12rpx;
+  flex-wrap: nowrap;
 }
 
 .elapsed-time {
@@ -86,6 +87,7 @@
   font-size: 24rpx;
   color: #666;
 }
+
 
 /* 操作按钮 */
 .action-buttons {
