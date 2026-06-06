@@ -6,7 +6,7 @@ Page({
     name: '',
     teamCount: 6,
     teamCountOptions: [6, 8, 10],
-    templateOptions: ['分组排位赛', '单循环联赛', '两轮空规则', '自定义模版'],
+    templateOptions: ['分组排位赛', '单循环联赛', '两轮空规则', '临时4队模版', '自定义模版'],
     templateType: 'group',
     templateIndex: 0,
     teamCountLocked: false,
@@ -140,6 +140,17 @@ Page({
       }
     }
 
+    if (templateType === 'fourTeam') {
+      return {
+        id: 'four-team',
+        name: '临时4队模版',
+        useGroups: false,
+        groupCount: 1,
+        legs: 1,
+        enableKnockout: true
+      }
+    }
+
     if (templateType === 'custom') {
       return {
         id: 'custom',
@@ -204,18 +215,31 @@ Page({
 
   onTemplateChange(e) {
     const templateIndex = parseInt(e.detail.value, 10)
-    const templateMap = ['group', 'league', 'twoBye', 'custom']
+    const templateMap = ['group', 'league', 'twoBye', 'fourTeam', 'custom']
     const templateType = templateMap[templateIndex] || 'group'
     const isTwoBye = templateType === 'twoBye'
+    const isFourTeam = templateType === 'fourTeam'
     const updates = {
       templateIndex,
       templateType,
-      teamCountLocked: isTwoBye
+      teamCountLocked: isTwoBye || isFourTeam
     }
     // 两轮空规则固定6支队伍
     if (isTwoBye && this.data.teamCount !== 6) {
       updates.teamCount = 6
       this.initTeams(6)
+    }
+    // 临时4队模版固定4支队伍，默认时间18:10
+    if (isFourTeam) {
+      if (this.data.teamCount !== 4) {
+        updates.teamCount = 4
+        this.initTeams(4)
+      }
+      updates.startTime = '18:10'
+      updates.groupMatchMinutes = 10
+      updates.breakMinutes = 3
+      updates.knockoutMatchMinutes = 29
+      updates.venueText = '场地1\n场地2'
     }
     this.setData(updates, () => this.syncTemplateState())
   },
@@ -351,6 +375,11 @@ Page({
       // 进入随机分号页面
       this.shuffleTwoByeAssignment()
       this.setData({ step: 3 })
+      return
+    }
+    if (templateConfig.id === 'four-team') {
+      // 临时4队模版：直接创建赛事，无需分组/随机分号
+      this.submitTournament(null, templateConfig)
       return
     }
     if (!templateConfig.useGroups) {

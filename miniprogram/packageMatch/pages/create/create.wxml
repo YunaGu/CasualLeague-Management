@@ -77,6 +77,11 @@
         <view class="template-desc">6支队伍随机分配A~F位置，每轮2队轮空，6轮小组赛后进行半决赛、决赛及名次赛。固定6支队伍、2个场地。</view>
       </view>
 
+      <view class="template-card" wx:if="{{templateType === 'fourTeam'}}">
+        <view class="template-title">临时4队模版说明</view>
+        <view class="template-desc">4支队伍按A~D输入顺序，5轮小组赛（每轮2场并行），第6轮为冠亚军决赛和三四名决赛（上下半场各12分钟）。固定4支队伍、2个场地。</view>
+      </view>
+
       <view class="template-card" wx:if="{{templateType === 'custom'}}">
         <view class="template-title">自定义模版</view>
         <view class="template-desc">如需自定义比赛场次，请通过模版库创建</view>
@@ -136,7 +141,7 @@
       </block>
       <block wx:elif="{{teamCountLocked}}">
         <view class="picker-value locked">
-          <text>{{teamCount}} 支球队（两轮空规则固定6队）</text>
+          <text>{{teamCount}} 支球队（{{templateType === 'twoBye' ? '两轮空规则固定6队' : '临时4队模版固定4队'}}）</text>
         </view>
       </block>
       <block wx:else>

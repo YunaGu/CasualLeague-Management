@@ -285,6 +285,14 @@ function createTournament(name, teams, teamCount, preGroups, options) {
       startMinute: parseTimeToMinutes(scheduleConfig.startTime),
       duration: scheduleConfig.groupMatchMinutes
     })
+  } else if (templateConfig.id === 'four-team') {
+    // 临时4队模版：按ABCD顺序直接使用，不打乱
+    tournament.groups = [{ name: '总榜', teams: tournament.teams.map(t => t.id) }]
+    tournament.matches = generateFourTeamMatches(tournament)
+    applyStageSchedule(tournament, 'group', {
+      startMinute: parseTimeToMinutes(scheduleConfig.startTime),
+      duration: scheduleConfig.groupMatchMinutes
+    })
   } else {
     // 生成小组赛赛程
     tournament.matches = generateGroupMatches(tournament)
@@ -494,6 +502,121 @@ function generateTwoByeMatches(tournament) {
     endMinute: thirdStart + thirdDuration,
     startTimeText: formatMinutes(thirdStart),
     endTimeText: formatMinutes(thirdStart + thirdDuration),
+    lockedSchedule: true
+  })
+
+  return matches
+}
+
+/**
+ * 临时4队模版：生成完整固定赛程（5轮小组赛 + 决赛/三四名）
+ * 4队分配到 A(0) B(1) C(2) D(3) 位置
+ * 小组赛每轮2场比赛并行，5轮单循环（含双循环部分对阵）
+ * 第6轮：冠亚军决赛（1st vs 2nd） + 三四名（3rd vs 4th），上下半场各12分钟
+ */
+function generateFourTeamMatches(tournament) {
+  const teams = tournament.teams
+  const venues = tournament.scheduleConfig.venues
+  const cfg = tournament.scheduleConfig
+  const groupDuration = cfg.groupMatchMinutes || 10
+  const breakMin = cfg.breakMinutes || 3
+  const startMinuteBase = parseTimeToMinutes(cfg.startTime)
+
+  // A=0, B=1, C=2, D=3
+  const groupSchedule = [
+    { round: 1, matches: [{ home: 2, away: 3, venue: 0 }, { home: 0, away: 1, venue: 1 }] },
+    { round: 2, matches: [{ home: 0, away: 2, venue: 0 }, { home: 1, away: 3, venue: 1 }] },
+    { round: 3, matches: [{ home: 0, away: 3, venue: 0 }, { home: 1, away: 2, venue: 1 }] },
+    { round: 4, matches: [{ home: 1, away: 3, venue: 0 }, { home: 0, away: 2, venue: 1 }] },
+    { round: 5, matches: [{ home: 1, away: 2, venue: 0 }, { home: 0, away: 3, venue: 1 }] }
+  ]
+
+  const matches = []
+  let cursor = startMinuteBase
+
+  // 生成小组赛（固定时间）
+  groupSchedule.forEach(roundInfo => {
+    roundInfo.matches.forEach(m => {
+      const venue = venues[m.venue] || venues[0] || { id: 'venue_1', name: '场地1' }
+      matches.push({
+        id: generateId(),
+        stage: 'group',
+        group: '总榜',
+        round: roundInfo.round,
+        homeTeam: teams[m.home].id,
+        awayTeam: teams[m.away].id,
+        homeScore: null,
+        awayScore: null,
+        events: [],
+        status: 'pending',
+        startTime: null,
+        venueId: venue.id,
+        venueName: venue.name,
+        startMinute: cursor,
+        endMinute: cursor + groupDuration,
+        startTimeText: formatMinutes(cursor),
+        endTimeText: formatMinutes(cursor + groupDuration),
+        lockedSchedule: true
+      })
+    })
+    cursor += groupDuration + breakMin
+  })
+
+  // 小组赛结束后休息6分钟再进行决赛
+  cursor += (6 - breakMin)
+
+  // 决赛：上下半场各12分钟+中场5分钟=29分钟
+  const finalDuration = 29
+  const venue1 = venues[0] || { id: 'venue_1', name: '场地1' }
+  const venue2 = venues[1] || venues[0] || { id: 'venue_2', name: '场地2' }
+
+  // 冠亚军决赛（场地1）
+  matches.push({
+    id: generateId(),
+    stage: 'final',
+    group: null,
+    round: null,
+    matchLabel: '冠亚军决赛',
+    homeTeam: null,
+    awayTeam: null,
+    homeRefText: '积分第1',
+    awayRefText: '积分第2',
+    homeScore: null,
+    awayScore: null,
+    events: [],
+    status: 'pending',
+    startTime: null,
+    venueId: venue1.id,
+    venueName: venue1.name,
+    startMinute: cursor,
+    endMinute: cursor + finalDuration,
+    startTimeText: formatMinutes(cursor),
+    endTimeText: formatMinutes(cursor + finalDuration),
+    lockedSchedule: true
+  })
+
+  // 三四名决赛（场地2）
+  matches.push({
+    id: generateId(),
+    stage: 'third',
+    group: null,
+    round: null,
+    matchLabel: '三四名决赛',
+    homeTeam: null,
+    awayTeam: null,
+    homeRefText: '积分第3',
+    awayRefText: '积分第4',
+    homeScore: null,
+    awayScore: null,
+    events: [],
+    status: 'pending',
+    startTime: null,
+    venueId: venue2.id,
+    venueName: venue2.name,
+    startMinute: cursor,
+    endMinute: cursor + finalDuration,
+    startTimeText: formatMinutes(cursor),
+    endTimeText: formatMinutes(cursor + finalDuration),
     lockedSchedule: true
   })
 
@@ -835,6 +958,35 @@ function fillTwoByeFinalTeams(tournament) {
 }
 
 /**
+ * 临时4队模版：小组赛结束后，将实际队伍落位到冠亚军决赛和三四名决赛
+ */
+function fillFourTeamFinalTeams(tournament) {
+  const standings = calculateGroupStandings(tournament)
+  const r1 = getGroupRankTeamId(standings, '总榜', 1)
+  const r2 = getGroupRankTeamId(standings, '总榜', 2)
+  const r3 = getGroupRankTeamId(standings, '总榜', 3)
+  const r4 = getGroupRankTeamId(standings, '总榜', 4)
+
+  // 落位冠亚军决赛
+  const finalMatch = tournament.matches.find(m => m.stage === 'final')
+  if (finalMatch) {
+    finalMatch.homeTeam = r1
+    finalMatch.awayTeam = r2
+  }
+
+  // 落位三四名决赛
+  const thirdMatch = tournament.matches.find(m => m.stage === 'third')
+  if (thirdMatch) {
+    thirdMatch.homeTeam = r3
+    thirdMatch.awayTeam = r4
+  }
+
+  tournament.stage = 'final'
+  saveTournament(tournament)
+  return tournament
+}
+
+/**
  * 生成排位赛赛程（按队伍数量）
  * 6队：A3vsB3，A1vsB2，B1vsA2，随后三四名/冠亚军
  * 8队：A1vsB2，B1vsA2，A3vsB4，B3vsA4，随后1-4与5-8各自产生最终名次
@@ -848,6 +1000,11 @@ function generateKnockoutMatches(tournament) {
   // 两轮空规则：淘汰赛已预先创建，只需落位实际队伍
   if (tournament.templateConfig && tournament.templateConfig.id === 'two-bye') {
     return fillTwoByeKnockoutTeams(tournament)
+  }
+
+  // 临时4队模版：淘汰赛已预先创建，只需落位实际队伍
+  if (tournament.templateConfig && tournament.templateConfig.id === 'four-team') {
+    return fillFourTeamFinalTeams(tournament)
   }
 
   const existingPlacement = (tournament.matches || []).some(m => m.stage !== 'group')
