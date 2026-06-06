@@ -479,3 +479,40 @@
   font-size: 26rpx;
   background: #fafafa;
 }
+
+/* 两轮空随机分号 */
+.assignment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.assignment-item {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 24rpx;
+  background: #f8f8f8;
+  border-radius: 12rpx;
+  border-left: 8rpx solid #1AAD19;
+}
+
+.assignment-label {
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 50%;
+  background: #1AAD19;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  font-weight: bold;
+  margin-right: 24rpx;
+  flex-shrink: 0;
+}
+
+.assignment-team {
+  font-size: 30rpx;
+  color: #333;
+  font-weight: 500;
+}

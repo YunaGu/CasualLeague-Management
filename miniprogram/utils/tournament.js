@@ -273,16 +273,231 @@ function createTournament(name, teams, teamCount, preGroups, options) {
     tournament.groups = generateGroups(tournament.teams, teamCount, templateConfig)
   }
 
-  // 生成小组赛赛程
-  tournament.matches = generateGroupMatches(tournament)
-  applyStageSchedule(tournament, 'group', {
-    startMinute: parseTimeToMinutes(scheduleConfig.startTime),
-    duration: scheduleConfig.groupMatchMinutes
-  })
+  // 两轮空规则：随机分配A~F位置，使用固定赛程
+  if (templateConfig.id === 'two-bye') {
+    // 随机打乱队伍顺序（即随机分配A~F位置）
+    const shuffledTeams = [...tournament.teams].sort(() => Math.random() - 0.5)
+    tournament.teams = shuffledTeams
+    // 更新分组引用
+    tournament.groups = [{ name: '总榜', teams: shuffledTeams.map(t => t.id) }]
+    tournament.matches = generateTwoByeMatches(tournament)
+    applyStageSchedule(tournament, 'group', {
+      startMinute: parseTimeToMinutes(scheduleConfig.startTime),
+      duration: scheduleConfig.groupMatchMinutes
+    })
+  } else {
+    // 生成小组赛赛程
+    tournament.matches = generateGroupMatches(tournament)
+    applyStageSchedule(tournament, 'group', {
+      startMinute: parseTimeToMinutes(scheduleConfig.startTime),
+      duration: scheduleConfig.groupMatchMinutes
+    })
+  }
 
   saveTournament(tournament)
   setCurrentTournament(tournament.id)
   return tournament
+}
+
+/**
+ * 两轮空规则：生成完整固定赛程（小组赛 + 淘汰赛）
+ * 6队分配到 A(0) B(1) C(2) D(3) E(4) F(5) 位置
+ * 小组赛每轮2场比赛，2队轮空
+ * 淘汰赛：半决赛、五六名、三四名、决赛均预设时间
+ */
+function generateTwoByeMatches(tournament) {
+  const teams = tournament.teams
+  const venues = tournament.scheduleConfig.venues
+  const cfg = tournament.scheduleConfig
+  const groupDuration = cfg.groupMatchMinutes || 10
+  const breakMin = cfg.breakMinutes || 3
+  const startMinuteBase = parseTimeToMinutes(cfg.startTime)
+
+  // A=0, B=1, C=2, D=3, E=4, F=5
+  const groupSchedule = [
+    { round: 1, matches: [{ home: 2, away: 4, venue: 0 }, { home: 3, away: 5, venue: 1 }] },
+    { round: 2, matches: [{ home: 0, away: 4, venue: 0 }, { home: 1, away: 5, venue: 1 }] },
+    { round: 3, matches: [{ home: 0, away: 2, venue: 0 }, { home: 1, away: 3, venue: 1 }] },
+    { round: 4, matches: [{ home: 2, away: 5, venue: 0 }, { home: 3, away: 4, venue: 1 }] },
+    { round: 5, matches: [{ home: 0, away: 5, venue: 0 }, { home: 1, away: 4, venue: 1 }] },
+    { round: 6, matches: [{ home: 0, away: 3, venue: 0 }, { home: 1, away: 2, venue: 1 }] }
+  ]
+
+  const matches = []
+  let cursor = startMinuteBase
+
+  // 生成小组赛（固定时间）
+  groupSchedule.forEach(roundInfo => {
+    roundInfo.matches.forEach(m => {
+      const venue = venues[m.venue] || venues[0] || { id: 'venue_1', name: '场地1' }
+      matches.push({
+        id: generateId(),
+        stage: 'group',
+        group: '总榜',
+        round: roundInfo.round,
+        homeTeam: teams[m.home].id,
+        awayTeam: teams[m.away].id,
+        homeScore: null,
+        awayScore: null,
+        events: [],
+        status: 'pending',
+        startTime: null,
+        venueId: venue.id,
+        venueName: venue.name,
+        startMinute: cursor,
+        endMinute: cursor + groupDuration,
+        startTimeText: formatMinutes(cursor),
+        endTimeText: formatMinutes(cursor + groupDuration),
+        lockedSchedule: true
+      })
+    })
+    cursor += groupDuration + breakMin
+  })
+
+  // 小组赛结束后休息10分钟
+  cursor += (10 - breakMin)
+
+  // 半决赛：排名1 vs 排名4, 排名2 vs 排名3（上下半场各10分钟+中场5分钟=25分钟）
+  const semiDuration = 25
+  const venue1 = venues[0] || { id: 'venue_1', name: '1号场' }
+  const venue2 = venues[1] || venues[0] || { id: 'venue_2', name: '2号场' }
+
+  matches.push({
+    id: generateId(),
+    stage: 'semi',
+    group: null,
+    round: null,
+    matchLabel: '半决赛1',
+    homeTeam: null,
+    awayTeam: null,
+    homeRefText: '排名1',
+    awayRefText: '排名4',
+    homeScore: null,
+    awayScore: null,
+    events: [],
+    status: 'pending',
+    startTime: null,
+    venueId: venue1.id,
+    venueName: venue1.name,
+    startMinute: cursor,
+    endMinute: cursor + semiDuration,
+    startTimeText: formatMinutes(cursor),
+    endTimeText: formatMinutes(cursor + semiDuration),
+    lockedSchedule: true
+  })
+
+  matches.push({
+    id: generateId(),
+    stage: 'semi',
+    group: null,
+    round: null,
+    matchLabel: '半决赛2',
+    homeTeam: null,
+    awayTeam: null,
+    homeRefText: '排名2',
+    awayRefText: '排名3',
+    homeScore: null,
+    awayScore: null,
+    events: [],
+    status: 'pending',
+    startTime: null,
+    venueId: venue2.id,
+    venueName: venue2.name,
+    startMinute: cursor,
+    endMinute: cursor + semiDuration,
+    startTimeText: formatMinutes(cursor),
+    endTimeText: formatMinutes(cursor + semiDuration),
+    lockedSchedule: true
+  })
+
+  cursor += semiDuration
+
+  // 休息5分钟
+  cursor += 5
+
+  // 决赛 & 名次赛（同时开始）
+  // 决赛：上下半场各12分钟+中场5分钟=29分钟，1号场
+  const finalDuration = 29
+  const fifthDuration = 12
+  const thirdDuration = 12
+
+  // 决赛（1号场）20:05~20:34
+  matches.push({
+    id: generateId(),
+    stage: 'final',
+    group: null,
+    round: null,
+    matchLabel: '决赛',
+    homeTeam: null,
+    awayTeam: null,
+    homeRefText: '半决赛胜者1',
+    awayRefText: '半决赛胜者2',
+    homeScore: null,
+    awayScore: null,
+    events: [],
+    status: 'pending',
+    startTime: null,
+    venueId: venue1.id,
+    venueName: venue1.name,
+    startMinute: cursor,
+    endMinute: cursor + finalDuration,
+    startTimeText: formatMinutes(cursor),
+    endTimeText: formatMinutes(cursor + finalDuration),
+    lockedSchedule: true
+  })
+
+  // 五六名排位赛（2号场）20:05~20:17
+  matches.push({
+    id: generateId(),
+    stage: 'fifth',
+    group: null,
+    round: null,
+    matchLabel: '五六名排位赛',
+    homeTeam: null,
+    awayTeam: null,
+    homeRefText: '排名5',
+    awayRefText: '排名6',
+    homeScore: null,
+    awayScore: null,
+    events: [],
+    status: 'pending',
+    startTime: null,
+    venueId: venue2.id,
+    venueName: venue2.name,
+    startMinute: cursor,
+    endMinute: cursor + fifthDuration,
+    startTimeText: formatMinutes(cursor),
+    endTimeText: formatMinutes(cursor + fifthDuration),
+    lockedSchedule: true
+  })
+
+  // 三四名决赛（2号场）五六名结束后休息5分钟
+  const thirdStart = cursor + fifthDuration + 5
+  matches.push({
+    id: generateId(),
+    stage: 'third',
+    group: null,
+    round: null,
+    matchLabel: '三四名决赛',
+    homeTeam: null,
+    awayTeam: null,
+    homeRefText: '半决赛败者1',
+    awayRefText: '半决赛败者2',
+    homeScore: null,
+    awayScore: null,
+    events: [],
+    status: 'pending',
+    startTime: null,
+    venueId: venue2.id,
+    venueName: venue2.name,
+    startMinute: thirdStart,
+    endMinute: thirdStart + thirdDuration,
+    startTimeText: formatMinutes(thirdStart),
+    endTimeText: formatMinutes(thirdStart + thirdDuration),
+    lockedSchedule: true
+  })
+
+  return matches
 }
 
 /**
@@ -547,6 +762,79 @@ function resolveMatchWinnerTeamId(match) {
 }
 
 /**
+ * 两轮空规则：小组赛结束后，将实际队伍落位到预创建的淘汰赛
+ */
+function fillTwoByeKnockoutTeams(tournament) {
+  const standings = calculateGroupStandings(tournament)
+  const r1 = getGroupRankTeamId(standings, '总榜', 1)
+  const r2 = getGroupRankTeamId(standings, '总榜', 2)
+  const r3 = getGroupRankTeamId(standings, '总榜', 3)
+  const r4 = getGroupRankTeamId(standings, '总榜', 4)
+  const r5 = getGroupRankTeamId(standings, '总榜', 5)
+  const r6 = getGroupRankTeamId(standings, '总榜', 6)
+
+  // 落位半决赛
+  const semi1 = tournament.matches.find(m => m.stage === 'semi' && m.matchLabel === '半决赛1')
+  if (semi1) {
+    semi1.homeTeam = r1
+    semi1.awayTeam = r4
+  }
+  const semi2 = tournament.matches.find(m => m.stage === 'semi' && m.matchLabel === '半决赛2')
+  if (semi2) {
+    semi2.homeTeam = r2
+    semi2.awayTeam = r3
+  }
+
+  // 落位五六名
+  const fifth = tournament.matches.find(m => m.stage === 'fifth')
+  if (fifth) {
+    fifth.homeTeam = r5
+    fifth.awayTeam = r6
+  }
+
+  tournament.stage = 'semi'
+  saveTournament(tournament)
+  return tournament
+}
+
+/**
+ * 两轮空规则：半决赛结束后，将实际队伍落位到决赛和三四名
+ */
+function fillTwoByeFinalTeams(tournament) {
+  const semiMatches = tournament.matches.filter(m => m.stage === 'semi' && m.status === 'finished')
+  if (semiMatches.length < 2) return tournament
+
+  const semi1 = tournament.matches.find(m => m.stage === 'semi' && m.matchLabel === '半决赛1' && m.status === 'finished')
+  const semi2 = tournament.matches.find(m => m.stage === 'semi' && m.matchLabel === '半决赛2' && m.status === 'finished')
+  if (!semi1 || !semi2) return tournament
+
+  const winner1 = resolveMatchWinnerTeamId(semi1)
+  const winner2 = resolveMatchWinnerTeamId(semi2)
+  if (!winner1 || !winner2) return tournament
+
+  const loser1 = winner1 === semi1.homeTeam ? semi1.awayTeam : semi1.homeTeam
+  const loser2 = winner2 === semi2.homeTeam ? semi2.awayTeam : semi2.homeTeam
+
+  // 落位决赛
+  const finalMatch = tournament.matches.find(m => m.stage === 'final')
+  if (finalMatch && !finalMatch.homeTeam) {
+    finalMatch.homeTeam = winner1
+    finalMatch.awayTeam = winner2
+  }
+
+  // 落位三四名
+  const thirdMatch = tournament.matches.find(m => m.stage === 'third')
+  if (thirdMatch && !thirdMatch.homeTeam) {
+    thirdMatch.homeTeam = loser1
+    thirdMatch.awayTeam = loser2
+  }
+
+  tournament.stage = 'final'
+  saveTournament(tournament)
+  return tournament
+}
+
+/**
  * 生成排位赛赛程（按队伍数量）
  * 6队：A3vsB3，A1vsB2，B1vsA2，随后三四名/冠亚军
  * 8队：A1vsB2，B1vsA2，A3vsB4，B3vsA4，随后1-4与5-8各自产生最终名次
@@ -555,6 +843,11 @@ function resolveMatchWinnerTeamId(match) {
 function generateKnockoutMatches(tournament) {
   if (!tournament.templateConfig || !tournament.templateConfig.enableKnockout) {
     return tournament
+  }
+
+  // 两轮空规则：淘汰赛已预先创建，只需落位实际队伍
+  if (tournament.templateConfig && tournament.templateConfig.id === 'two-bye') {
+    return fillTwoByeKnockoutTeams(tournament)
   }
 
   const existingPlacement = (tournament.matches || []).some(m => m.stage !== 'group')
@@ -956,7 +1249,11 @@ function finishMatch(tournamentId, matchId, finishData) {
   } else if (match.stage === 'semi') {
     const semiMatches = tournament.matches.filter(m => m.stage === 'semi')
     if (semiMatches.every(m => m.status === 'finished')) {
-      generateFinalMatches(tournament)
+      if (tournament.templateConfig && tournament.templateConfig.id === 'two-bye') {
+        fillTwoByeFinalTeams(tournament)
+      } else {
+        generateFinalMatches(tournament)
+      }
     }
   } else if (match.stage === 'place5semi') {
     const place5SemiMatches = tournament.matches.filter(m => m.stage === 'place5semi')

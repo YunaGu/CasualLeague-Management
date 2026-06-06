@@ -6,9 +6,12 @@ Page({
     name: '',
     teamCount: 6,
     teamCountOptions: [6, 8, 10],
-    templateOptions: ['分组排位赛', '单循环联赛', '自定义模版'],
+    templateOptions: ['分组排位赛', '单循环联赛', '两轮空规则', '自定义模版'],
     templateType: 'group',
     templateIndex: 0,
+    teamCountLocked: false,
+    // 两轮空随机分号
+    twoByeAssignment: [], // [{label: 'A', teamIndex: 0, teamName: '...'}]
     stageDurationLabel: '小组赛每场(分钟)',
     needsGrouping: true,
     customUseGroups: true,
@@ -126,6 +129,17 @@ Page({
       }
     }
 
+    if (templateType === 'twoBye') {
+      return {
+        id: 'two-bye',
+        name: '两轮空规则',
+        useGroups: false,
+        groupCount: 1,
+        legs: 1,
+        enableKnockout: true
+      }
+    }
+
     if (templateType === 'custom') {
       return {
         id: 'custom',
@@ -190,11 +204,20 @@ Page({
 
   onTemplateChange(e) {
     const templateIndex = parseInt(e.detail.value, 10)
-    const templateMap = ['group', 'league', 'custom']
-    this.setData({
+    const templateMap = ['group', 'league', 'twoBye', 'custom']
+    const templateType = templateMap[templateIndex] || 'group'
+    const isTwoBye = templateType === 'twoBye'
+    const updates = {
       templateIndex,
-      templateType: templateMap[templateIndex] || 'group'
-    }, () => this.syncTemplateState())
+      templateType,
+      teamCountLocked: isTwoBye
+    }
+    // 两轮空规则固定6支队伍
+    if (isTwoBye && this.data.teamCount !== 6) {
+      updates.teamCount = 6
+      this.initTeams(6)
+    }
+    this.setData(updates, () => this.syncTemplateState())
   },
 
   onCustomUseGroupsChange(e) {
@@ -213,6 +236,7 @@ Page({
 
   // 选择队伍数量
   onTeamCountChange(e) {
+    if (this.data.teamCountLocked) return
     const count = this.data.teamCountOptions[e.detail.value]
     this.initTeams(count)
   },
@@ -323,6 +347,12 @@ Page({
     }
 
     const templateConfig = this.getTemplateConfig()
+    if (templateConfig.id === 'two-bye') {
+      // 进入随机分号页面
+      this.shuffleTwoByeAssignment()
+      this.setData({ step: 3 })
+      return
+    }
     if (!templateConfig.useGroups) {
       this.submitTournament(null, templateConfig)
       return
@@ -340,6 +370,44 @@ Page({
   // 返回步骤1
   goBackToStep1() {
     this.setData({ step: 1 })
+  },
+
+  // === 两轮空随机分号 ===
+  shuffleTwoByeAssignment() {
+    const { teams, teamCount } = this.data
+    const labels = ['A', 'B', 'C', 'D', 'E', 'F']
+    // 生成随机序列
+    const indices = []
+    for (let i = 0; i < teamCount; i++) indices.push(i)
+    // Fisher-Yates shuffle
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      const tmp = indices[i]
+      indices[i] = indices[j]
+      indices[j] = tmp
+    }
+    const assignment = labels.slice(0, teamCount).map((label, idx) => ({
+      label,
+      teamIndex: indices[idx],
+      teamName: teams[indices[idx]].name
+    }))
+    this.setData({ twoByeAssignment: assignment })
+  },
+
+  // 重新打乱
+  reshuffleTwoBye() {
+    this.shuffleTwoByeAssignment()
+  },
+
+  // 确认分号并创建赛事
+  confirmTwoByeAndCreate() {
+    const { twoByeAssignment, teams, teamCount } = this.data
+    // 按A~F顺序重新排列teams数组
+    const reorderedTeams = twoByeAssignment.map(item => teams[item.teamIndex])
+    this.setData({ teams: reorderedTeams }, () => {
+      const templateConfig = this.getTemplateConfig()
+      this.submitTournament(null, templateConfig)
+    })
   },
 
   // 将球队分配到 A 组

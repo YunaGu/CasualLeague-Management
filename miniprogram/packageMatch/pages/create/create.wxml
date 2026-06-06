@@ -72,6 +72,11 @@
         <view class="template-desc">不分组，所有队伍单循环交手，按积分直接排出总名次。</view>
       </view>
 
+      <view class="template-card" wx:if="{{templateType === 'twoBye'}}">
+        <view class="template-title">两轮空规则说明</view>
+        <view class="template-desc">6支队伍随机分配A~F位置，每轮2队轮空，6轮小组赛后进行半决赛、决赛及名次赛。固定6支队伍、2个场地。</view>
+      </view>
+
       <view class="template-card" wx:if="{{templateType === 'custom'}}">
         <view class="template-title">自定义模版</view>
         <view class="template-desc">如需自定义比赛场次，请通过模版库创建</view>
@@ -129,6 +134,11 @@
           <text>{{teamCount}} 支球队（由模板决定）</text>
         </view>
       </block>
+      <block wx:elif="{{teamCountLocked}}">
+        <view class="picker-value locked">
+          <text>{{teamCount}} 支球队（两轮空规则固定6队）</text>
+        </view>
+      </block>
       <block wx:else>
         <picker mode="selector" range="{{teamCountOptions}}" bindchange="onTeamCountChange">
           <view class="picker-value">
@@ -163,7 +173,7 @@
     </view>
 
     <!-- 下一步按钮 -->
-    <button class="btn-primary submit-btn" bindtap="goToGrouping">{{needsGrouping ? '下一步：分组' : '直接创建赛事'}}</button>
+    <button class="btn-primary submit-btn" bindtap="goToGrouping">{{needsGrouping ? '下一步：分组' : (templateType === 'twoBye' ? '下一步：随机分号' : '直接创建赛事')}}</button>
     </block>
   </block>
 
@@ -223,6 +233,29 @@
     <view class="step2-buttons">
       <button class="btn-secondary" bindtap="goBackToStep1">上一步</button>
       <button class="btn-primary" bindtap="onSubmit">创建赛事</button>
+    </view>
+  </block>
+
+  <!-- ===== 步骤3：两轮空随机分号 ===== -->
+  <block wx:if="{{step === 3}}">
+    <view class="card">
+      <view class="section-title">随机分号结果</view>
+      <view class="grouping-tip">队伍已随机分配到 A~F 位置，不满意可重新打乱</view>
+    </view>
+
+    <view class="card">
+      <view class="assignment-list">
+        <view class="assignment-item" wx:for="{{twoByeAssignment}}" wx:key="label">
+          <view class="assignment-label">{{item.label}}</view>
+          <view class="assignment-team">{{item.teamName}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="step2-buttons">
+      <button class="btn-secondary" bindtap="goBackToStep1">上一步</button>
+      <button class="btn-random" bindtap="reshuffleTwoBye">🎲 重新打乱</button>
+      <button class="btn-primary" bindtap="confirmTwoByeAndCreate">确认并创建</button>
     </view>
   </block>
 </view>
