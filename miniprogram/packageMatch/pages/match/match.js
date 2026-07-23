@@ -20,7 +20,8 @@ Page({
     penaltyRule: '3+1+1+1',
     penaltyNote: '',
     elapsedText: '00:00',
-    elapsedMinute: 1
+    elapsedMinute: 1,
+    isAdmin: false
   },
 
   onLoad(options) {
@@ -34,6 +35,7 @@ Page({
       console.error('比赛数据同步失败', error)
       wx.showToast({ title: '云同步失败', icon: 'none' })
     }
+    this.setData({ isAdmin: tournament.canManageTournaments() })
     this.loadData()
     this.startTimerIfNeeded()
   },
@@ -120,6 +122,7 @@ Page({
 
   // 开始比赛
   startMatch() {
+    if (!this.ensureAdmin()) return
     const result = tournament.startMatch(this.data.currentTournament.id, this.data.matchId)
     if (result) {
       wx.showToast({ title: '比赛开始', icon: 'success' })
@@ -130,6 +133,7 @@ Page({
 
   // 结束比赛
   finishMatch() {
+    if (!this.ensureAdmin()) return
     const { match } = this.data
     const isKnockout = match && match.stage !== 'group'
     const isDraw = match && match.homeScore === match.awayScore
@@ -205,6 +209,7 @@ Page({
   },
 
   confirmPenaltyFinish() {
+    if (!this.ensureAdmin()) return
     const {
       currentTournament,
       matchId,
@@ -255,6 +260,7 @@ Page({
 
   // 打开事件记录弹窗
   openEventModal(e) {
+    if (!this.ensureAdmin()) return
     const type = e.currentTarget.dataset.type || 'goal'
     const teamId = e.currentTarget.dataset.team
 
@@ -289,6 +295,7 @@ Page({
 
   // 确认添加事件
   confirmEvent() {
+    if (!this.ensureAdmin()) return
     const { eventType, eventTeamId, eventPlayerNumber, matchId, currentTournament, elapsedMinute } = this.data
 
     if (!eventTeamId) {
@@ -323,6 +330,7 @@ Page({
 
   // 删除事件
   removeEvent(e) {
+    if (!this.ensureAdmin()) return
     const eventId = e.currentTarget.dataset.eventId
     wx.showModal({
       title: '确认删除',
@@ -334,5 +342,11 @@ Page({
         }
       }
     })
+  },
+
+  ensureAdmin() {
+    if (this.data.isAdmin) return true
+    wx.showToast({ title: '当前账号只有查看权限', icon: 'none' })
+    return false
   }
 })

@@ -10,11 +10,59 @@ const CLOUD_PAGE_SIZE = 20
 
 let cloudWriteQueue = Promise.resolve()
 let cloudSyncPromise = null
+let accessPromise = null
+let accessInfo = {
+  loaded: false,
+  openid: '',
+  isAdmin: false,
+  role: 'viewer'
+}
 
 function canUseCloud() {
   return typeof wx !== 'undefined' &&
     wx.cloud &&
     typeof wx.cloud.database === 'function'
+}
+
+async function loadAccessInfo(force = false) {
+  if (!canUseCloud()) return { ...accessInfo }
+  if (accessInfo.loaded && !force) return { ...accessInfo }
+  if (accessPromise) return accessPromise
+
+  accessPromise = wx.cloud.callFunction({ name: 'wxContext' })
+    .then(response => {
+      const result = response && response.result ? response.result : {}
+      accessInfo = {
+        loaded: true,
+        openid: result.openid || '',
+        isAdmin: result.isAdmin === true,
+        role: result.isAdmin === true ? 'admin' : 'viewer'
+      }
+      return { ...accessInfo }
+    })
+    .catch(error => {
+      console.error('用户权限读取失败，已进入只读模式', error)
+      accessInfo = {
+        loaded: true,
+        openid: '',
+        isAdmin: false,
+        role: 'viewer'
+      }
+      return { ...accessInfo }
+    })
+    .finally(() => {
+      accessPromise = null
+    })
+
+  return accessPromise
+}
+
+function getAccessInfo() {
+  return { ...accessInfo }
+}
+
+function canManageTournaments() {
+  return accessInfo.loaded && accessInfo.isAdmin
 }
 
 function cloneForCloud(value) {
@@ -41,6 +89,13 @@ function enqueueCloudWrite(operation) {
     .then(() => true)
     .catch(error => {
       console.error('赛事云端保存失败', error)
+      if (typeof wx.showToast === 'function') {
+        wx.showToast({
+          title: '云端保存失败，改动未同步',
+          icon: 'none',
+          duration: 3000
+        })
+      }
       return false
     })
 
@@ -49,8 +104,8 @@ function enqueueCloudWrite(operation) {
 }
 
 function saveTournamentToCloud(tournament) {
-  if (!canUseCloud() || !tournament || !tournament.id) {
-    return Promise.resolve()
+  if (!canUseCloud() || !canManageTournaments() || !tournament || !tournament.id) {
+    return Promise.resolve(false)
   }
 
   const data = buildCloudTournament(tournament)
@@ -95,10 +150,13 @@ async function syncTournamentsFromCloud() {
   if (cloudSyncPromise) return cloudSyncPromise
 
   cloudSyncPromise = (async () => {
+    await loadAccessInfo()
     const localTournaments = getTournaments()
 
     // 没有 _openid 的记录来自旧版纯本地存储，首次升级时自动上传。
-    const localOnly = localTournaments.filter(item => item && item.id && !item._openid)
+    const localOnly = canManageTournaments()
+      ? localTournaments.filter(item => item && item.id && !item._openid)
+      : []
     const migrationResults = await Promise.all(
       localOnly.map(item => saveTournamentToCloud(item))
     )
@@ -309,6 +367,10 @@ function saveTournaments(tournaments) {
  * 保存单个赛事（更新）
  */
 function saveTournament(tournament) {
+  if (!canManageTournaments()) {
+    console.warn('当前用户为只读用户，已阻止保存赛事')
+    return false
+  }
   tournament.updatedAt = Date.now()
   const tournaments = getTournaments()
   const idx = tournaments.findIndex(t => t.id === tournament.id)
@@ -319,6 +381,7 @@ function saveTournament(tournament) {
   }
   saveTournaments(tournaments)
   saveTournamentToCloud(tournament)
+  return true
 }
 
 /**
@@ -333,6 +396,7 @@ function setCurrentTournament(id) {
  * @param {string} id - 要删除的赛事 ID
  */
 function deleteTournament(id) {
+  if (!canManageTournaments()) return false
   const tournaments = getTournaments()
   const remaining = tournaments.filter(t => t.id !== id)
   saveTournaments(remaining)
@@ -347,6 +411,7 @@ function deleteTournament(id) {
     const next = remaining[0]
     wx.setStorageSync('CURRENT_TOURNAMENT_ID', next ? next.id : '')
   }
+  return true
 }
 
 /**
@@ -363,6 +428,7 @@ function deleteTournament(id) {
  * @param {Object} preGroups - 预定义分组 { A: [teamIndex...], B: [teamIndex...] }，可选
  */
 function createTournament(name, teams, teamCount, preGroups, options) {
+  if (!canManageTournaments()) return null
   const scheduleConfig = normalizeScheduleConfig(options && options.scheduleConfig)
   const templateConfig = normalizeTemplateConfig(options && options.templateConfig, teamCount)
   const tournament = {
@@ -1332,6 +1398,7 @@ function areAllPlacementMatchesFinished(tournament) {
 }
 
 function updateMatchSchedule(tournamentId, matchId, payload) {
+  if (!canManageTournaments()) return null
   const tournaments = getTournaments()
   const tournament = tournaments.find(t => t.id === tournamentId)
   if (!tournament) return null
@@ -1366,6 +1433,7 @@ function updateMatchSchedule(tournamentId, matchId, payload) {
 }
 
 function updatePlayerDisplayName(tournamentId, payload) {
+  if (!canManageTournaments()) return null
   const tournaments = getTournaments()
   const tournament = tournaments.find(t => t.id === tournamentId)
   if (!tournament) return null
@@ -1414,6 +1482,7 @@ function updatePlayerDisplayName(tournamentId, payload) {
  * @param {Object} event - { type: 'goal'|'yellow'|'red', playerId, playerNumber, playerName, teamId, minute }
  */
 function addMatchEvent(tournamentId, matchId, event) {
+  if (!canManageTournaments()) return null
   const tournaments = getTournaments()
   const tournament = tournaments.find(t => t.id === tournamentId)
   if (!tournament) return null
@@ -1441,6 +1510,7 @@ function addMatchEvent(tournamentId, matchId, event) {
  * 删除比赛事件
  */
 function removeMatchEvent(tournamentId, matchId, eventId) {
+  if (!canManageTournaments()) return null
   const tournaments = getTournaments()
   const tournament = tournaments.find(t => t.id === tournamentId)
   if (!tournament) return null
@@ -1470,6 +1540,7 @@ function removeMatchEvent(tournamentId, matchId, eventId) {
  * 开始比赛
  */
 function startMatch(tournamentId, matchId) {
+  if (!canManageTournaments()) return null
   const tournaments = getTournaments()
   const tournament = tournaments.find(t => t.id === tournamentId)
   if (!tournament) return null
@@ -1491,6 +1562,7 @@ function startMatch(tournamentId, matchId) {
  * 结束比赛
  */
 function finishMatch(tournamentId, matchId, finishData) {
+  if (!canManageTournaments()) return null
   const tournaments = getTournaments()
   const tournament = tournaments.find(t => t.id === tournamentId)
   if (!tournament) return null
@@ -1757,6 +1829,7 @@ function createTemplateFromTournament(tournament, templateName, templateDesc) {
  * @returns {Object} 新创建的赛事
  */
 function createTournamentFromTemplate(templateId, name, teams, teamCount, preGroups, venueOverrides) {
+  if (!canManageTournaments()) return null
   const template = getTemplate(templateId)
   if (!template) {
     throw new Error(`Template ${templateId} not found`)
@@ -1973,6 +2046,9 @@ function generateDefaultMatchSlots(teamCount, venueCount, scheduleConfig) {
 
 module.exports = {
   generateId,
+  loadAccessInfo,
+  getAccessInfo,
+  canManageTournaments,
   getTournaments,
   getCurrentTournament,
   syncTournamentsFromCloud,

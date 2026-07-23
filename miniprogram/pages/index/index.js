@@ -7,7 +7,9 @@ Page({
     standings: null,
     recentMatches: [],
     nextMatches: [],
-    currentStageText: ''
+    currentStageText: '',
+    isAdmin: false,
+    userOpenid: ''
   },
 
   async onShow() {
@@ -21,6 +23,11 @@ Page({
         duration: 3000
       })
     }
+    const access = tournament.getAccessInfo()
+    this.setData({
+      isAdmin: access.isAdmin,
+      userOpenid: access.openid
+    })
     this.loadData()
   },
 
@@ -102,11 +109,30 @@ Page({
 
   // 创建新赛事
   goCreate() {
+    if (!this.ensureAdmin()) return
     wx.navigateTo({ url: '/packageMatch/pages/create/create' })
   },
 
   goTemplate() {
+    if (!this.ensureAdmin()) return
     wx.navigateTo({ url: '/packageMatch/pages/template/template' })
+  },
+
+  ensureAdmin() {
+    if (this.data.isAdmin) return true
+    wx.showToast({ title: '当前账号只有查看权限', icon: 'none' })
+    return false
+  },
+
+  copyUserOpenid() {
+    if (!this.data.userOpenid) {
+      wx.showToast({ title: '暂未获取到用户ID', icon: 'none' })
+      return
+    }
+    wx.setClipboardData({
+      data: this.data.userOpenid,
+      success: () => wx.showToast({ title: '用户ID已复制', icon: 'success' })
+    })
   },
 
   // 切换赛事
@@ -119,6 +145,7 @@ Page({
 
   // 删除赛事
   deleteTournament(e) {
+    if (!this.ensureAdmin()) return
     const id = e.currentTarget.dataset.id
     const name = e.currentTarget.dataset.name
     wx.showModal({

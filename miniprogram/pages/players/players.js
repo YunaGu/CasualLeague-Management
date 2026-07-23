@@ -8,7 +8,8 @@ Page({
     disciplineStats: [],
     showEditModal: false,
     editPlayerName: '',
-    editTarget: null
+    editTarget: null,
+    isAdmin: false
   },
 
   async onShow() {
@@ -18,6 +19,7 @@ Page({
       console.error('球员数据同步失败', error)
       wx.showToast({ title: '云同步失败', icon: 'none' })
     }
+    this.setData({ isAdmin: tournament.canManageTournaments() })
     this.loadData()
   },
 
@@ -43,6 +45,7 @@ Page({
   },
 
   openEditName(e) {
+    if (!this.ensureAdmin()) return
     const item = e.currentTarget.dataset.item
     if (!item || !item.teamId) return
 
@@ -68,6 +71,7 @@ Page({
   stopTap() {},
 
   confirmEditName() {
+    if (!this.ensureAdmin()) return
     const { currentTournament, editPlayerName, editTarget } = this.data
     if (!currentTournament || !editTarget) return
     if (!editPlayerName) {
@@ -89,5 +93,11 @@ Page({
     } else {
       wx.showToast({ title: '更新失败', icon: 'none' })
     }
+  },
+
+  ensureAdmin() {
+    if (this.data.isAdmin) return true
+    wx.showToast({ title: '当前账号只有查看权限', icon: 'none' })
+    return false
   }
 })

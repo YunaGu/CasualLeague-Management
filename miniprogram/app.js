@@ -16,8 +16,9 @@ App({
     }
     wx.cloud.init(cloudOptions)
 
-    // 提前开始恢复缓存；页面 onShow 会等待同一个同步任务。
-    this.cloudReady = tournament.syncTournamentsFromCloud()
+    // 先识别管理员身份，再恢复赛事缓存。
+    this.cloudReady = tournament.loadAccessInfo()
+      .then(() => tournament.syncTournamentsFromCloud())
       .catch(error => {
         console.error('赛事云端初始化失败', error)
         return tournament.getTournaments()

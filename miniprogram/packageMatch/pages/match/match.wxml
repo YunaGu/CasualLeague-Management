@@ -36,7 +36,7 @@
   </view>
 
   <!-- 操作按钮 -->
-  <view class="action-buttons" wx:if="{{match.status !== 'finished'}}">
+  <view class="action-buttons" wx:if="{{isAdmin && match.status !== 'finished'}}">
     <button class="btn-primary" wx:if="{{match.status === 'pending'}}" bindtap="startMatch">开始比赛</button>
     <block wx:if="{{match.status === 'playing'}}">
       <view class="event-buttons">
@@ -76,7 +76,7 @@
           </view>
           <text class="timeline-minute" wx:if="{{item.minute}}">{{item.minute}}'</text>
         </view>
-        <view class="timeline-delete" bindtap="removeEvent" data-event-id="{{item.id}}" wx:if="{{match.status === 'playing'}}">
+        <view class="timeline-delete" bindtap="removeEvent" data-event-id="{{item.id}}" wx:if="{{isAdmin && match.status === 'playing'}}">
           <text>×</text>
         </view>
       </view>

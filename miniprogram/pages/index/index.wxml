@@ -2,10 +2,17 @@
   <!-- 无赛事时的空状态 -->
   <view class="empty-state" wx:if="{{!currentTournament}}">
     <text class="icon">⚽</text>
-    <text class="text">暂无赛事</text>
-    <text class="text" style="margin-top: 10rpx; font-size: 26rpx;">点击下方按钮创建第一个赛事</text>
-    <button class="btn-primary" style="margin-top: 40rpx; width: 60%;" bindtap="goCreate">创建赛事</button>
-    <button class="btn-secondary" style="margin-top: 16rpx; width: 60%;" bindtap="goTemplate">📋 使用模板创建</button>
+    <text class="text">暂无公开赛事</text>
+    <text class="text" wx:if="{{isAdmin}}" style="margin-top: 10rpx; font-size: 26rpx;">点击下方按钮创建第一个赛事</text>
+    <text class="text" wx:else style="margin-top: 10rpx; font-size: 26rpx;">当前账号为只读用户</text>
+    <button wx:if="{{isAdmin}}" class="btn-primary" style="margin-top: 40rpx; width: 60%;" bindtap="goCreate">创建赛事</button>
+    <button wx:if="{{isAdmin}}" class="btn-secondary" style="margin-top: 16rpx; width: 60%;" bindtap="goTemplate">📋 使用模板创建</button>
+  </view>
+
+  <view class="card" wx:if="{{!isAdmin}}">
+    <view class="section-title">只读模式</view>
+    <text style="display: block; color: #666; font-size: 26rpx;">你可以查看全部公开赛事，但不能创建、记分、修改或删除。</text>
+    <button wx:if="{{userOpenid}}" class="btn-secondary" size="mini" style="margin-top: 20rpx;" bindtap="copyUserOpenid">复制我的管理员配置 ID</button>
   </view>
 
   <!-- 有赛事时的主页 -->
@@ -72,7 +79,7 @@
           <text class="tournament-item-name">{{item.name}}</text>
           <view style="display: flex; align-items: center; gap: 16rpx;">
             <text class="tournament-item-count">{{item.teamCount}}队</text>
-            <view class="tournament-delete-btn" catchtap="deleteTournament" data-id="{{item.id}}" data-name="{{item.name}}">
+            <view wx:if="{{isAdmin}}" class="tournament-delete-btn" catchtap="deleteTournament" data-id="{{item.id}}" data-name="{{item.name}}">
               <text class="tournament-delete-icon">🗑</text>
             </view>
           </view>
@@ -81,7 +88,7 @@
     </view>
 
     <!-- 操作按钮区 -->
-    <view style="display: flex; gap: 16rpx; margin-top: 20rpx; padding: 0 0rpx;">
+    <view wx:if="{{isAdmin}}" style="display: flex; gap: 16rpx; margin-top: 20rpx; padding: 0 0rpx;">
       <button class="btn-secondary" style="flex: 1;" bindtap="goCreate">+ 新建赛事</button>
       <button class="btn-secondary" style="flex: 1;" bindtap="goTemplate">📋 模板库</button>
     </view>

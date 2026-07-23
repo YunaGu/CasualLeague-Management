@@ -30,7 +30,7 @@
             <view class="scorer-name">#{{item.playerNumber}} {{item.playerName}}</view>
             <view class="scorer-team">{{item.teamName}}</view>
           </view>
-          <view class="edit-name-btn" bindtap="openEditName" data-item="{{item}}">编辑</view>
+          <view wx:if="{{isAdmin}}" class="edit-name-btn" bindtap="openEditName" data-item="{{item}}">编辑</view>
           <view class="scorer-goals">
             <text class="goals-num">{{item.goals}}</text>
             <text class="goals-label">球</text>
@@ -52,7 +52,7 @@
             <view class="discipline-name">#{{item.playerNumber}} {{item.playerName}}</view>
             <view class="discipline-team">{{item.teamName}}</view>
           </view>
-          <view class="edit-name-btn" bindtap="openEditName" data-item="{{item}}">编辑</view>
+          <view wx:if="{{isAdmin}}" class="edit-name-btn" bindtap="openEditName" data-item="{{item}}">编辑</view>
           <view class="discipline-cards">
             <view class="card-badge yellow" wx:if="{{item.yellowCards > 0}}">
               <text>🟡 {{item.yellowCards}}</text>

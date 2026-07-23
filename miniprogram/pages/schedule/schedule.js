@@ -9,7 +9,8 @@ Page({
     knockoutMatches: [],
     currentRound: 0,
     rounds: [],
-    hasKnockout: false
+    hasKnockout: false,
+    isAdmin: false
   },
 
   async onShow() {
@@ -19,6 +20,7 @@ Page({
       console.error('赛程同步失败', error)
       wx.showToast({ title: '云同步失败', icon: 'none' })
     }
+    this.setData({ isAdmin: tournament.canManageTournaments() })
     this.loadData()
   },
 
@@ -542,6 +544,7 @@ Page({
   },
 
   startMatchFromList(e) {
+    if (!this.ensureAdmin()) return
     const matchId = e.currentTarget.dataset.id
     const current = this.data.currentTournament
     if (!current) return
@@ -554,6 +557,7 @@ Page({
   },
 
   finishMatchFromList(e) {
+    if (!this.ensureAdmin()) return
     const matchId = e.currentTarget.dataset.id
     const current = this.data.currentTournament
     if (!current) return
@@ -592,6 +596,7 @@ Page({
   },
 
   editScheduleTap(e) {
+    if (!this.ensureAdmin()) return
     const matchId = e.currentTarget.dataset.id
     this.openScheduleEditor(matchId)
   },
@@ -663,11 +668,13 @@ Page({
   },
 
   onLongPressMatch(e) {
+    if (!this.ensureAdmin()) return
     const matchId = e.currentTarget.dataset.id
     this.openScheduleEditor(matchId)
   },
 
   openScheduleEditor(matchId) {
+    if (!this.ensureAdmin()) return
     if (!matchId) return
 
     const isPreview = String(matchId).indexOf('preview-') === 0
@@ -743,6 +750,7 @@ Page({
   },
 
   savePreviewScheduleEdit(previewId, payload) {
+    if (!this.ensureAdmin()) return
     const current = this.data.currentTournament
     if (!current || !previewId) return
 
@@ -760,6 +768,12 @@ Page({
     }
 
     tournament.saveTournament(nextTournament)
+  },
+
+  ensureAdmin() {
+    if (this.data.isAdmin) return true
+    wx.showToast({ title: '当前账号只有查看权限', icon: 'none' })
+    return false
   },
 
   getMatchDurationForEdit(match) {
