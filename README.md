@@ -17,6 +17,18 @@ npm i
 
 使用[微信开发者工具](https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html)打开该示例代码，云开发环境搭建请参考[云开发示例说明](https://github.com/wechat-miniprogram/miniprogram-demo/blob/master/miniprogram/page/cloud/README.md)。
 
+## 赛事云数据库
+
+赛事数据使用微信云开发数据库保存，本地存储只作为页面缓存。
+
+1. 在微信开发者工具中打开【云开发】，创建并选择一个云环境。
+2. 在【云开发 → 数据库】中新建集合 `tournaments`。
+3. 将集合权限设置为【所有用户可读，仅创建者可读写】。这样创建者可以记分和修改赛程，其他用户只能查看。
+4. 如果项目有多个云环境，在 `miniprogram/config.js` 的 `cloudEnvId` 中填写环境 ID；留空时使用当前小程序的默认环境。
+5. 重新编译小程序。旧版保存在本地的赛事会在首次启动时自动上传到云端。
+
+可在云开发控制台的 `tournaments` 集合中确认赛事文档是否已经写入。确认云端存在数据后，再使用开发者工具的【清除缓存 → 全部清除】测试恢复。
+
 
 ## 贡献
 

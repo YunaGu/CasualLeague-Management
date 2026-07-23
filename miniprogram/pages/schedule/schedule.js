@@ -12,7 +12,13 @@ Page({
     hasKnockout: false
   },
 
-  onShow() {
+  async onShow() {
+    try {
+      await tournament.syncTournamentsFromCloud()
+    } catch (error) {
+      console.error('赛程同步失败', error)
+      wx.showToast({ title: '云同步失败', icon: 'none' })
+    }
     this.loadData()
   },
 

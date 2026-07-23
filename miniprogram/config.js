@@ -5,6 +5,10 @@
 const host = '14592619.qcloud.la'
 
 const config = {
+  // 留空时使用当前小程序关联的默认云环境。
+  // 如果有多个云环境，请填写云开发控制台显示的环境 ID。
+  cloudEnvId: '',
+
   // 测试的请求地址，用于测试会话
   requestUrl: 'https://mp.weixin.qq.com',
   host,

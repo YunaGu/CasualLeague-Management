@@ -5,6 +5,129 @@
 
 const STORAGE_KEY = 'FOOTBALL_TOURNAMENTS'
 const TEMPLATE_STORAGE_KEY = 'FOOTBALL_TEMPLATES'
+const CLOUD_COLLECTION = 'tournaments'
+const CLOUD_PAGE_SIZE = 20
+
+let cloudWriteQueue = Promise.resolve()
+let cloudSyncPromise = null
+
+function canUseCloud() {
+  return typeof wx !== 'undefined' &&
+    wx.cloud &&
+    typeof wx.cloud.database === 'function'
+}
+
+function cloneForCloud(value) {
+  return JSON.parse(JSON.stringify(value))
+}
+
+function buildCloudTournament(tournament) {
+  const data = cloneForCloud(tournament)
+  delete data._id
+  delete data._openid
+  return data
+}
+
+function saveTournamentsLocally(tournaments) {
+  wx.setStorageSync(STORAGE_KEY, tournaments)
+}
+
+function enqueueCloudWrite(operation) {
+  if (!canUseCloud()) return Promise.resolve(false)
+
+  const result = cloudWriteQueue
+    .catch(() => undefined)
+    .then(operation)
+    .then(() => true)
+    .catch(error => {
+      console.error('赛事云端保存失败', error)
+      return false
+    })
+
+  cloudWriteQueue = result.then(() => undefined)
+  return result
+}
+
+function saveTournamentToCloud(tournament) {
+  if (!canUseCloud() || !tournament || !tournament.id) {
+    return Promise.resolve()
+  }
+
+  const data = buildCloudTournament(tournament)
+  return enqueueCloudWrite(() => wx.cloud
+    .database()
+    .collection(CLOUD_COLLECTION)
+    .doc(tournament.id)
+    .set({ data }))
+}
+
+async function getAllCloudTournaments() {
+  const collection = wx.cloud.database().collection(CLOUD_COLLECTION)
+  const result = []
+  let offset = 0
+
+  while (true) {
+    const page = await collection
+      .skip(offset)
+      .limit(CLOUD_PAGE_SIZE)
+      .get()
+    const docs = Array.isArray(page.data) ? page.data : []
+    result.push(...docs)
+    if (docs.length < CLOUD_PAGE_SIZE) break
+    offset += docs.length
+  }
+
+  return result
+    .map(doc => ({
+      ...doc,
+      id: doc.id || doc._id
+    }))
+    .filter(item => item.id)
+    .sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0))
+}
+
+/**
+ * 将旧的本地赛事迁移到云端，并用云端数据刷新本地缓存。
+ * 页面仍可同步读取本地缓存，因此不需要重写现有的赛事计算逻辑。
+ */
+async function syncTournamentsFromCloud() {
+  if (!canUseCloud()) return getTournaments()
+  if (cloudSyncPromise) return cloudSyncPromise
+
+  cloudSyncPromise = (async () => {
+    const localTournaments = getTournaments()
+
+    // 没有 _openid 的记录来自旧版纯本地存储，首次升级时自动上传。
+    const localOnly = localTournaments.filter(item => item && item.id && !item._openid)
+    const migrationResults = await Promise.all(
+      localOnly.map(item => saveTournamentToCloud(item))
+    )
+    if (migrationResults.some(success => !success)) {
+      throw new Error('本地赛事上传云端失败，已保留本地缓存')
+    }
+    await cloudWriteQueue
+
+    const cloudTournaments = await getAllCloudTournaments()
+    saveTournamentsLocally(cloudTournaments)
+
+    const currentId = wx.getStorageSync('CURRENT_TOURNAMENT_ID')
+    const currentStillExists = cloudTournaments.some(item => item.id === currentId)
+    if (!currentStillExists) {
+      wx.setStorageSync(
+        'CURRENT_TOURNAMENT_ID',
+        cloudTournaments[0] ? cloudTournaments[0].id : ''
+      )
+    }
+
+    return cloudTournaments
+  })()
+
+  try {
+    return await cloudSyncPromise
+  } finally {
+    cloudSyncPromise = null
+  }
+}
 
 /**
  * 生成唯一 ID
@@ -179,13 +302,14 @@ function getCurrentTournament() {
  * 保存赛事列表
  */
 function saveTournaments(tournaments) {
-  wx.setStorageSync(STORAGE_KEY, tournaments)
+  saveTournamentsLocally(tournaments)
 }
 
 /**
  * 保存单个赛事（更新）
  */
 function saveTournament(tournament) {
+  tournament.updatedAt = Date.now()
   const tournaments = getTournaments()
   const idx = tournaments.findIndex(t => t.id === tournament.id)
   if (idx >= 0) {
@@ -194,6 +318,7 @@ function saveTournament(tournament) {
     tournaments.push(tournament)
   }
   saveTournaments(tournaments)
+  saveTournamentToCloud(tournament)
 }
 
 /**
@@ -211,6 +336,11 @@ function deleteTournament(id) {
   const tournaments = getTournaments()
   const remaining = tournaments.filter(t => t.id !== id)
   saveTournaments(remaining)
+  enqueueCloudWrite(() => wx.cloud
+    .database()
+    .collection(CLOUD_COLLECTION)
+    .doc(id)
+    .remove())
   // 若删除的是当前赛事，切换到其他赛事（或清空）
   const currentId = wx.getStorageSync('CURRENT_TOURNAMENT_ID')
   if (currentId === id) {
@@ -1231,7 +1361,7 @@ function updateMatchSchedule(tournamentId, matchId, payload) {
   }
 
   match.lockedSchedule = true
-  saveTournaments(tournaments)
+  saveTournament(tournament)
   return tournament
 }
 
@@ -1274,7 +1404,7 @@ function updatePlayerDisplayName(tournamentId, payload) {
     })
   })
 
-  saveTournaments(tournaments)
+  saveTournament(tournament)
   return tournament
 }
 
@@ -1303,7 +1433,7 @@ function addMatchEvent(tournamentId, matchId, event) {
     }
   }
 
-  saveTournaments(tournaments)
+  saveTournament(tournament)
   return tournament
 }
 
@@ -1332,7 +1462,7 @@ function removeMatchEvent(tournamentId, matchId, eventId) {
   }
 
   match.events.splice(eventIdx, 1)
-  saveTournaments(tournaments)
+  saveTournament(tournament)
   return tournament
 }
 
@@ -1353,7 +1483,7 @@ function startMatch(tournamentId, matchId) {
   match.startTime = Date.now()
   match.endTime = null
 
-  saveTournaments(tournaments)
+  saveTournament(tournament)
   return tournament
 }
 
@@ -1423,7 +1553,7 @@ function finishMatch(tournamentId, matchId, finishData) {
     tournament.stage = 'finished'
   }
 
-  saveTournaments(tournaments)
+  saveTournament(tournament)
   return tournament
 }
 
@@ -1845,6 +1975,7 @@ module.exports = {
   generateId,
   getTournaments,
   getCurrentTournament,
+  syncTournamentsFromCloud,
   saveTournament,
   saveTournaments,
   setCurrentTournament,

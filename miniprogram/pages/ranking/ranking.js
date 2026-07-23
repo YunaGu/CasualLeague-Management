@@ -10,7 +10,13 @@ Page({
     qualifiedCount: 0
   },
 
-  onShow() {
+  async onShow() {
+    try {
+      await tournament.syncTournamentsFromCloud()
+    } catch (error) {
+      console.error('排名同步失败', error)
+      wx.showToast({ title: '云同步失败', icon: 'none' })
+    }
     this.loadData()
   },
 

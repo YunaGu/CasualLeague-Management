@@ -10,7 +10,17 @@ Page({
     currentStageText: ''
   },
 
-  onShow() {
+  async onShow() {
+    try {
+      await tournament.syncTournamentsFromCloud()
+    } catch (error) {
+      console.error('首页赛事同步失败', error)
+      wx.showToast({
+        title: '云同步失败，请检查云数据库配置',
+        icon: 'none',
+        duration: 3000
+      })
+    }
     this.loadData()
   },
 

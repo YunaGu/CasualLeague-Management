@@ -27,7 +27,13 @@ Page({
     this.setData({ matchId: options.matchId })
   },
 
-  onShow() {
+  async onShow() {
+    try {
+      await tournament.syncTournamentsFromCloud()
+    } catch (error) {
+      console.error('比赛数据同步失败', error)
+      wx.showToast({ title: '云同步失败', icon: 'none' })
+    }
     this.loadData()
     this.startTimerIfNeeded()
   },
