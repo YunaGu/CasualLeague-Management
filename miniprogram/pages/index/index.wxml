@@ -31,6 +31,16 @@
           <text class="count-label">支球队</text>
         </view>
       </view>
+      <view class="share-actions">
+        <button class="share-action primary" open-type="share">
+          <text class="share-action-symbol">↗</text>
+          <text>发给朋友</text>
+        </button>
+        <button class="share-action" bindtap="showTimelineShareGuide">
+          <text class="share-action-symbol">◉</text>
+          <text>发朋友圈</text>
+        </button>
+      </view>
     </view>
 
     <!-- 最近比赛 -->

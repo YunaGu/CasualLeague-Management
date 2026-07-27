@@ -1,4 +1,6 @@
 {
   "navigationBarTitleText": "排名",
+  "enableShareAppMessage": true,
+  "enableShareTimeline": true,
   "usingComponents": {}
 }

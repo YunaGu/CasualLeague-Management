@@ -1,4 +1,5 @@
 const tournament = require('../../utils/tournament')
+const share = require('../../utils/share')
 
 Page({
   data: {
@@ -12,6 +13,11 @@ Page({
     userOpenid: ''
   },
 
+  onLoad(options) {
+    this.shareOptions = options || {}
+    share.enableShareMenu()
+  },
+
   async onShow() {
     try {
       await tournament.syncTournamentsFromCloud()
@@ -23,12 +29,31 @@ Page({
         duration: 3000
       })
     }
+    share.applySharedTournament(this.shareOptions)
+    this.shareOptions = null
     const access = tournament.getAccessInfo()
     this.setData({
       isAdmin: access.isAdmin,
       userOpenid: access.openid
     })
     this.loadData()
+  },
+
+  onShareAppMessage() {
+    return share.buildAppMessage(this.data.currentTournament, {
+      section: '实时赛程、比分与排名',
+      pagePath: '/pages/index/index'
+    })
+  },
+
+  onShareTimeline() {
+    return share.buildTimeline(this.data.currentTournament, {
+      section: '实时赛程、比分与排名'
+    })
+  },
+
+  showTimelineShareGuide() {
+    share.showTimelineGuide()
   },
 
   loadData() {

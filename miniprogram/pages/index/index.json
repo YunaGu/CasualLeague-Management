@@ -1,4 +1,6 @@
 {
   "navigationBarTitleText": "足球赛事",
+  "enableShareAppMessage": true,
+  "enableShareTimeline": true,
   "usingComponents": {}
 }

@@ -30,6 +30,43 @@
   color: #999;
 }
 
+.share-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 32rpx;
+}
+
+.share-action {
+  flex: 1;
+  height: 72rpx;
+  margin: 0;
+  padding: 0 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+  background: #fff;
+  color: #1AAD19;
+  border: 2rpx solid #1AAD19;
+  border-radius: 36rpx;
+  font-size: 27rpx;
+  line-height: 1;
+}
+
+.share-action::after {
+  border: none;
+}
+
+.share-action.primary {
+  background: #1AAD19;
+  color: #fff;
+}
+
+.share-action-symbol {
+  font-size: 30rpx;
+  line-height: 1;
+}
+
 /* 比赛项目 */
 .match-item {
   padding: 20rpx 0;

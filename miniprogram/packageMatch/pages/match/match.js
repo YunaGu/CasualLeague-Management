@@ -1,4 +1,5 @@
 const tournament = require('../../../utils/tournament')
+const share = require('../../../utils/share')
 
 Page({
   data: {
@@ -25,7 +26,9 @@ Page({
   },
 
   onLoad(options) {
-    this.setData({ matchId: options.matchId })
+    this.shareOptions = options || {}
+    this.setData({ matchId: (options && options.matchId) || '' })
+    share.enableShareMenu()
   },
 
   async onShow() {
@@ -35,9 +38,37 @@ Page({
       console.error('比赛数据同步失败', error)
       wx.showToast({ title: '云同步失败', icon: 'none' })
     }
+    share.applySharedTournament(this.shareOptions)
+    this.shareOptions = null
     this.setData({ isAdmin: tournament.canManageTournaments() })
     this.loadData()
     this.startTimerIfNeeded()
+  },
+
+  onShareAppMessage() {
+    const { currentTournament, match, homeTeam, awayTeam } = this.data
+    return share.buildAppMessage(currentTournament, {
+      title: this.getMatchShareTitle(currentTournament, match, homeTeam, awayTeam),
+      pagePath: '/packageMatch/pages/match/match',
+      extraQuery: { matchId: this.data.matchId }
+    })
+  },
+
+  onShareTimeline() {
+    const { currentTournament, match, homeTeam, awayTeam } = this.data
+    return share.buildTimeline(currentTournament, {
+      title: this.getMatchShareTitle(currentTournament, match, homeTeam, awayTeam),
+      extraQuery: { matchId: this.data.matchId }
+    })
+  },
+
+  getMatchShareTitle(currentTournament, match, homeTeam, awayTeam) {
+    const tournamentName = currentTournament ? currentTournament.name : '足球赛事'
+    if (!match || !homeTeam || !awayTeam) return `${tournamentName}｜比赛详情`
+    if (match.status === 'pending') {
+      return `${tournamentName}｜${homeTeam.name} VS ${awayTeam.name}`
+    }
+    return `${tournamentName}｜${homeTeam.name} ${match.homeScore}:${match.awayScore} ${awayTeam.name}`
   },
 
   onHide() {

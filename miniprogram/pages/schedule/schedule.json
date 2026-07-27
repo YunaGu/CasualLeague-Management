@@ -1,4 +1,6 @@
 {
   "navigationBarTitleText": "赛程",
+  "enableShareAppMessage": true,
+  "enableShareTimeline": true,
   "usingComponents": {}
 }

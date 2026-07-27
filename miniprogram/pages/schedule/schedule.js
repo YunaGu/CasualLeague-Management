@@ -1,4 +1,5 @@
 const tournament = require('../../utils/tournament')
+const share = require('../../utils/share')
 
 Page({
   data: {
@@ -13,6 +14,11 @@ Page({
     isAdmin: false
   },
 
+  onLoad(options) {
+    this.shareOptions = options || {}
+    share.enableShareMenu()
+  },
+
   async onShow() {
     try {
       await tournament.syncTournamentsFromCloud()
@@ -20,8 +26,23 @@ Page({
       console.error('赛程同步失败', error)
       wx.showToast({ title: '云同步失败', icon: 'none' })
     }
+    share.applySharedTournament(this.shareOptions)
+    this.shareOptions = null
     this.setData({ isAdmin: tournament.canManageTournaments() })
     this.loadData()
+  },
+
+  onShareAppMessage() {
+    return share.buildAppMessage(this.data.currentTournament, {
+      section: '完整赛程与实时比分',
+      pagePath: '/pages/schedule/schedule'
+    })
+  },
+
+  onShareTimeline() {
+    return share.buildTimeline(this.data.currentTournament, {
+      section: '完整赛程与实时比分'
+    })
   },
 
   loadData() {

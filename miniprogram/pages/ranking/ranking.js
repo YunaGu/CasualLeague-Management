@@ -1,4 +1,5 @@
 const tournament = require('../../utils/tournament')
+const share = require('../../utils/share')
 
 Page({
   data: {
@@ -10,6 +11,11 @@ Page({
     qualifiedCount: 0
   },
 
+  onLoad(options) {
+    this.shareOptions = options || {}
+    share.enableShareMenu()
+  },
+
   async onShow() {
     try {
       await tournament.syncTournamentsFromCloud()
@@ -17,7 +23,22 @@ Page({
       console.error('排名同步失败', error)
       wx.showToast({ title: '云同步失败', icon: 'none' })
     }
+    share.applySharedTournament(this.shareOptions)
+    this.shareOptions = null
     this.loadData()
+  },
+
+  onShareAppMessage() {
+    return share.buildAppMessage(this.data.currentTournament, {
+      section: '最新积分排名',
+      pagePath: '/pages/ranking/ranking'
+    })
+  },
+
+  onShareTimeline() {
+    return share.buildTimeline(this.data.currentTournament, {
+      section: '最新积分排名'
+    })
   },
 
   loadData() {
