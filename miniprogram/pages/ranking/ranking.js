@@ -8,7 +8,8 @@ Page({
     groups: [],
     advancementRules: [],
     rulesTitle: '晋级规则',
-    qualifiedCount: 0
+    qualifiedCount: 0,
+    isAdmin: false
   },
 
   onLoad(options) {
@@ -25,6 +26,7 @@ Page({
     }
     share.applySharedTournament(this.shareOptions)
     this.shareOptions = null
+    this.setData({ isAdmin: tournament.canManageTournaments() })
     this.loadData()
   },
 
@@ -49,10 +51,25 @@ Page({
     }
 
     const standings = tournament.calculateGroupStandings(current)
-    const groups = Object.keys(standings).map(name => ({
-      name,
-      teams: standings[name]
-    }))
+    const groups = Object.keys(standings).map(name => {
+      const teams = standings[name]
+      const pendingByKey = {}
+      teams
+        .filter(team => team.rankPending && team.tieKey)
+        .forEach(team => {
+          if (!pendingByKey[team.tieKey]) pendingByKey[team.tieKey] = []
+          pendingByKey[team.tieKey].push(team.teamName)
+        })
+      const tieNotices = Object.keys(pendingByKey)
+        .map(key => `${pendingByKey[key].join('、')} 完全同分`)
+
+      return {
+        name,
+        teams,
+        hasPendingRank: tieNotices.length > 0,
+        tieNotices
+      }
+    })
     const advancementRules = this.buildAdvancementRules(current)
     const qualifiedCount = this.getQualifiedCount(current)
     const rulesTitle = current.templateConfig && current.templateConfig.enableKnockout ? '晋级规则' : '排名说明'
@@ -64,6 +81,32 @@ Page({
       advancementRules,
       rulesTitle,
       qualifiedCount
+    })
+  },
+
+  resolveRankingTies(e) {
+    if (!this.data.isAdmin) {
+      wx.showToast({ title: '仅管理员可以确认名次', icon: 'none' })
+      return
+    }
+    const groupName = e.currentTarget.dataset.group
+    const current = this.data.currentTournament
+    if (!current || !groupName) return
+
+    wx.showModal({
+      title: '抽签确定名次',
+      content: '系统将为该组仍完全同分的球队随机抽签并保存结果。确认后可能生成后续淘汰赛对阵。',
+      confirmText: '确认抽签',
+      success: (res) => {
+        if (!res.confirm) return
+        const result = tournament.resolveRankingTies(current.id, groupName)
+        if (!result) {
+          wx.showToast({ title: '当前没有待抽签球队', icon: 'none' })
+          return
+        }
+        wx.showToast({ title: '抽签完成', icon: 'success' })
+        this.loadData()
+      }
     })
   },
 
@@ -90,14 +133,16 @@ Page({
     if (!templateConfig.enableKnockout) {
       if (templateConfig.useGroups) {
         return [
-          '各组按积分、净胜球、进球数排序。',
+          '各组同分顺序：积分 > 净胜球 > 进球数 > 相互战绩 > 公平竞赛分。',
+          '相互战绩比较同分球队间的积分、净胜球和进球数；公平竞赛分为黄牌1分、红牌3分，分数少者优先，仍相同则抽签。',
           '当前模版不生成排位赛，最终名次以积分榜为准。'
         ]
       }
 
       return [
         '所有队伍按总榜积分排序。',
-        '同分排名顺序：积分 > 净胜球 > 进球数。'
+        '同分顺序：积分 > 净胜球 > 进球数 > 相互战绩 > 公平竞赛分。',
+        '相互战绩比较同分球队间的积分、净胜球和进球数；公平竞赛分为黄牌1分、红牌3分，分数少者优先，仍相同则抽签。'
       ]
     }
 
@@ -123,7 +168,8 @@ Page({
       rules.push('各小组第3名进行五六名排位赛（A3 对 B3）。')
     }
 
-    rules.push('小组同分排名顺序：积分 > 净胜球 > 进球数。')
+    rules.push('小组同分顺序：积分 > 净胜球 > 进球数 > 相互战绩 > 公平竞赛分。')
+    rules.push('相互战绩比较同分球队间的积分、净胜球和进球数；公平竞赛分为黄牌1分、红牌3分，分数少者优先，仍相同则抽签。')
     return rules
   }
 })

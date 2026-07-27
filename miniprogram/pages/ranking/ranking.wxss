@@ -42,6 +42,10 @@
   border-left: 4rpx solid #1AAD19;
 }
 
+.table-row.rank-pending {
+  background: #fff8e1;
+}
+
 .col-rank {
   width: 50rpx;
   text-align: center;
@@ -49,14 +53,36 @@
   color: #666;
 }
 
+.col-rank.pending {
+  color: #e65100;
+  font-size: 19rpx;
+}
+
 .col-team {
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
   font-weight: 500;
   color: #333;
   padding-left: 10rpx;
+  min-width: 0;
+}
+
+.team-name-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.draw-badge {
+  flex-shrink: 0;
+  padding: 2rpx 7rpx;
+  border-radius: 6rpx;
+  background: #e3f2fd;
+  color: #1565c0;
+  font-size: 17rpx;
+  font-weight: 500;
 }
 
 .col-stat {
@@ -78,6 +104,43 @@
   text-align: center;
   font-weight: 700;
   color: #1AAD19;
+}
+
+.tie-warning {
+  padding: 20rpx 24rpx 22rpx;
+  background: #fff8e1;
+  border-top: 1rpx solid #ffe0b2;
+}
+
+.tie-warning-title {
+  color: #e65100;
+  font-size: 24rpx;
+  font-weight: 600;
+  margin-bottom: 6rpx;
+}
+
+.tie-warning-text {
+  color: #795548;
+  font-size: 21rpx;
+  line-height: 1.55;
+}
+
+.draw-button {
+  height: 60rpx;
+  margin: 16rpx 0 0;
+  padding: 0 24rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ff9800;
+  color: #fff;
+  border-radius: 30rpx;
+  font-size: 24rpx;
+  line-height: 1;
+}
+
+.draw-button::after {
+  border: none;
 }
 
 /* 图例 */

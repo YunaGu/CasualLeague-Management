@@ -949,10 +949,85 @@ function buildRoundRobinRounds(teamIds) {
  * 计算小组排名
  * @returns {Object} { A: [...], B: [...] }
  */
+function applyStandingMatch(stats, match) {
+  const isHome = match.homeTeam === stats.teamId
+  const isAway = match.awayTeam === stats.teamId
+  if (!isHome && !isAway) return
+
+  const goalsFor = isHome ? match.homeScore : match.awayScore
+  const goalsAgainst = isHome ? match.awayScore : match.homeScore
+  stats.played++
+  stats.goalsFor += goalsFor
+  stats.goalsAgainst += goalsAgainst
+
+  if (goalsFor > goalsAgainst) {
+    stats.won++
+    stats.points += 3
+  } else if (goalsFor === goalsAgainst) {
+    stats.drawn++
+    stats.points += 1
+  } else {
+    stats.lost++
+  }
+  stats.goalDifference = stats.goalsFor - stats.goalsAgainst
+}
+
+function comparePrimaryStanding(a, b) {
+  if (b.points !== a.points) return b.points - a.points
+  if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference
+  return b.goalsFor - a.goalsFor
+}
+
+function hasSamePrimaryStanding(a, b) {
+  return a.points === b.points &&
+    a.goalDifference === b.goalDifference &&
+    a.goalsFor === b.goalsFor
+}
+
+function compareFinalTieBreak(a, b) {
+  if (b.headToHeadPoints !== a.headToHeadPoints) {
+    return b.headToHeadPoints - a.headToHeadPoints
+  }
+  if (b.headToHeadGoalDifference !== a.headToHeadGoalDifference) {
+    return b.headToHeadGoalDifference - a.headToHeadGoalDifference
+  }
+  if (b.headToHeadGoalsFor !== a.headToHeadGoalsFor) {
+    return b.headToHeadGoalsFor - a.headToHeadGoalsFor
+  }
+  return a.fairPlayPenalty - b.fairPlayPenalty
+}
+
+function getTieKey(teamStats) {
+  return teamStats
+    .map(item => String(item.teamId))
+    .sort()
+    .join('|')
+}
+
+function getSavedTieOrder(tournament, groupName, tieKey, teamStats) {
+  const groupBreaks = tournament.rankingTieBreaks && tournament.rankingTieBreaks[groupName]
+  const record = groupBreaks && groupBreaks[tieKey]
+  const order = record && Array.isArray(record.orderedTeamIds)
+    ? record.orderedTeamIds.map(String)
+    : []
+  const expected = teamStats.map(item => String(item.teamId)).sort()
+  const actual = [...order].sort()
+  if (expected.length !== actual.length) return null
+  if (expected.some((teamId, index) => teamId !== actual[index])) return null
+  return order
+}
+
 function calculateGroupStandings(tournament) {
   const standings = {}
 
   tournament.groups.forEach(group => {
+    const groupMatches = tournament.matches
+      .filter(m => m.stage === 'group' && m.group === group.name && m.status === 'finished')
+    const allGroupMatches = tournament.matches
+      .filter(m => m.stage === 'group' && m.group === group.name)
+    const groupComplete = allGroupMatches.length > 0 &&
+      allGroupMatches.every(match => match.status === 'finished')
+
     const teamStats = group.teams.map(teamId => {
       const team = tournament.teams.find(t => t.id === teamId)
       const stats = {
@@ -965,57 +1040,170 @@ function calculateGroupStandings(tournament) {
         goalsFor: 0,
         goalsAgainst: 0,
         goalDifference: 0,
-        points: 0
+        points: 0,
+        headToHeadPoints: 0,
+        headToHeadGoalDifference: 0,
+        headToHeadGoalsFor: 0,
+        fairPlayPenalty: 0,
+        rankPending: false,
+        rankResolvedByDraw: false,
+        tieKey: ''
       }
 
-      // 统计该队的比赛结果
-      tournament.matches
-        .filter(m => m.stage === 'group' && m.group === group.name && m.status === 'finished')
-        .forEach(match => {
-          if (match.homeTeam === teamId) {
-            stats.played++
-            stats.goalsFor += match.homeScore
-            stats.goalsAgainst += match.awayScore
-            if (match.homeScore > match.awayScore) {
-              stats.won++
-              stats.points += 3
-            } else if (match.homeScore === match.awayScore) {
-              stats.drawn++
-              stats.points += 1
-            } else {
-              stats.lost++
-            }
-          } else if (match.awayTeam === teamId) {
-            stats.played++
-            stats.goalsFor += match.awayScore
-            stats.goalsAgainst += match.homeScore
-            if (match.awayScore > match.homeScore) {
-              stats.won++
-              stats.points += 3
-            } else if (match.awayScore === match.homeScore) {
-              stats.drawn++
-              stats.points += 1
-            } else {
-              stats.lost++
-            }
-          }
+      groupMatches.forEach(match => {
+        applyStandingMatch(stats, match)
+        ;(match.events || []).forEach(event => {
+          if (event.teamId !== teamId) return
+          if (event.type === 'yellow') stats.fairPlayPenalty += 1
+          if (event.type === 'red') stats.fairPlayPenalty += 3
         })
-
-      stats.goalDifference = stats.goalsFor - stats.goalsAgainst
+      })
       return stats
     })
 
-    // 排序：积分 > 净胜球 > 进球数
-    teamStats.sort((a, b) => {
-      if (b.points !== a.points) return b.points - a.points
-      if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference
-      return b.goalsFor - a.goalsFor
-    })
+    teamStats.sort(comparePrimaryStanding)
 
-    standings[group.name] = teamStats
+    const rankedTeams = []
+    let primaryStart = 0
+    while (primaryStart < teamStats.length) {
+      let primaryEnd = primaryStart + 1
+      while (
+        primaryEnd < teamStats.length &&
+        hasSamePrimaryStanding(teamStats[primaryStart], teamStats[primaryEnd])
+      ) {
+        primaryEnd++
+      }
+
+      const primaryTie = teamStats.slice(primaryStart, primaryEnd)
+      if (primaryTie.length > 1) {
+        const tiedTeamIds = primaryTie.map(item => item.teamId)
+        primaryTie.forEach(item => {
+          const headToHead = {
+            teamId: item.teamId,
+            played: 0,
+            won: 0,
+            drawn: 0,
+            lost: 0,
+            goalsFor: 0,
+            goalsAgainst: 0,
+            goalDifference: 0,
+            points: 0
+          }
+          groupMatches
+            .filter(match => (
+              tiedTeamIds.includes(match.homeTeam) &&
+              tiedTeamIds.includes(match.awayTeam)
+            ))
+            .forEach(match => applyStandingMatch(headToHead, match))
+          item.headToHeadPoints = headToHead.points
+          item.headToHeadGoalDifference = headToHead.goalDifference
+          item.headToHeadGoalsFor = headToHead.goalsFor
+        })
+        primaryTie.sort(compareFinalTieBreak)
+
+        let finalStart = 0
+        while (finalStart < primaryTie.length) {
+          let finalEnd = finalStart + 1
+          while (
+            finalEnd < primaryTie.length &&
+            compareFinalTieBreak(primaryTie[finalStart], primaryTie[finalEnd]) === 0
+          ) {
+            finalEnd++
+          }
+
+          const exactTie = primaryTie.slice(finalStart, finalEnd)
+          if (exactTie.length > 1 && groupComplete) {
+            const tieKey = getTieKey(exactTie)
+            const savedOrder = getSavedTieOrder(tournament, group.name, tieKey, exactTie)
+            exactTie.forEach(item => {
+              item.tieKey = tieKey
+            })
+
+            if (savedOrder) {
+              exactTie.sort((a, b) => (
+                savedOrder.indexOf(String(a.teamId)) - savedOrder.indexOf(String(b.teamId))
+              ))
+              exactTie.forEach(item => {
+                item.rankResolvedByDraw = true
+              })
+            } else {
+              exactTie.forEach(item => {
+                item.rankPending = true
+              })
+            }
+          }
+
+          rankedTeams.push(...exactTie)
+          finalStart = finalEnd
+        }
+      } else {
+        rankedTeams.push(...primaryTie)
+      }
+
+      primaryStart = primaryEnd
+    }
+
+    standings[group.name] = rankedTeams
   })
 
   return standings
+}
+
+function hasUnresolvedRankingTies(tournament) {
+  const standings = calculateGroupStandings(tournament)
+  return Object.keys(standings)
+    .some(groupName => standings[groupName].some(item => item.rankPending))
+}
+
+function shuffleTeamIds(teamIds) {
+  const result = [...teamIds]
+  for (let index = result.length - 1; index > 0; index--) {
+    const target = Math.floor(Math.random() * (index + 1))
+    const current = result[index]
+    result[index] = result[target]
+    result[target] = current
+  }
+  return result
+}
+
+function resolveRankingTies(tournamentId, groupName) {
+  if (!canManageTournaments()) return null
+  const tournaments = getTournaments()
+  const tournament = tournaments.find(item => item.id === tournamentId)
+  if (!tournament) return null
+
+  const standings = calculateGroupStandings(tournament)
+  const groupStanding = standings[groupName] || []
+  const pendingByKey = {}
+  groupStanding
+    .filter(item => item.rankPending && item.tieKey)
+    .forEach(item => {
+      if (!pendingByKey[item.tieKey]) pendingByKey[item.tieKey] = []
+      pendingByKey[item.tieKey].push(item.teamId)
+    })
+  const tieKeys = Object.keys(pendingByKey)
+  if (tieKeys.length === 0) return null
+
+  if (!tournament.rankingTieBreaks) tournament.rankingTieBreaks = {}
+  if (!tournament.rankingTieBreaks[groupName]) tournament.rankingTieBreaks[groupName] = {}
+  tieKeys.forEach(tieKey => {
+    tournament.rankingTieBreaks[groupName][tieKey] = {
+      orderedTeamIds: shuffleTeamIds(pendingByKey[tieKey]),
+      resolvedAt: Date.now(),
+      method: 'draw'
+    }
+  })
+
+  if (!hasUnresolvedRankingTies(tournament) && isGroupStageComplete(tournament)) {
+    if (tournament.templateConfig && tournament.templateConfig.enableKnockout) {
+      generateKnockoutMatches(tournament)
+    } else {
+      tournament.stage = 'finished'
+    }
+  }
+
+  saveTournament(tournament)
+  return tournament
 }
 
 /**
@@ -1725,7 +1913,9 @@ function finishMatch(tournamentId, matchId, finishData) {
 
   // 检查阶段变化
   if (match.stage === 'group' && isGroupStageComplete(tournament)) {
-    if (tournament.templateConfig && tournament.templateConfig.enableKnockout) {
+    if (hasUnresolvedRankingTies(tournament)) {
+      tournament.stage = 'group'
+    } else if (tournament.templateConfig && tournament.templateConfig.enableKnockout) {
       generateKnockoutMatches(tournament)
     } else {
       tournament.stage = 'finished'
@@ -2183,6 +2373,7 @@ module.exports = {
   deleteTournament,
   createTournament,
   calculateGroupStandings,
+  resolveRankingTies,
   isGroupStageComplete,
   generateKnockoutMatches,
   generateFinalMatches,

@@ -22,9 +22,12 @@
           <text class="col-points">积分</text>
         </view>
         <!-- 表格内容 -->
-        <view class="table-row {{index < qualifiedCount ? 'qualified' : ''}}" wx:for="{{item.teams}}" wx:for-item="team" wx:for-index="index" wx:key="teamId">
-          <text class="col-rank">{{index + 1}}</text>
-          <text class="col-team">{{team.teamName}}</text>
+        <view class="table-row {{index < qualifiedCount && !team.rankPending ? 'qualified' : ''}} {{team.rankPending ? 'rank-pending' : ''}}" wx:for="{{item.teams}}" wx:for-item="team" wx:for-index="index" wx:key="teamId">
+          <text class="col-rank {{team.rankPending ? 'pending' : ''}}">{{team.rankPending ? '待定' : index + 1}}</text>
+          <view class="col-team">
+            <text class="team-name-text">{{team.teamName}}</text>
+            <text class="draw-badge" wx:if="{{team.rankResolvedByDraw}}">抽签</text>
+          </view>
           <text class="col-stat">{{team.played}}</text>
           <text class="col-stat">{{team.won}}</text>
           <text class="col-stat">{{team.drawn}}</text>
@@ -33,6 +36,12 @@
           <text class="col-stat">{{team.goalsAgainst}}</text>
           <text class="col-stat {{team.goalDifference > 0 ? 'positive' : team.goalDifference < 0 ? 'negative' : ''}}">{{team.goalDifference}}</text>
           <text class="col-points">{{team.points}}</text>
+        </view>
+        <view class="tie-warning" wx:if="{{item.hasPendingRank}}">
+          <view class="tie-warning-title">⚠ 名次待确认</view>
+          <view class="tie-warning-text" wx:for="{{item.tieNotices}}" wx:key="index">{{item}}</view>
+          <view class="tie-warning-text">相互战绩和公平竞赛分仍相同，需要抽签决定名次。</view>
+          <button wx:if="{{isAdmin}}" class="draw-button" bindtap="resolveRankingTies" data-group="{{item.name}}">抽签定名次</button>
         </view>
       </view>
     </view>
