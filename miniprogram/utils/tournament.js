@@ -1080,6 +1080,129 @@ function resolveMatchWinnerTeamId(match) {
   return null
 }
 
+function setPendingMatchTeams(match, homeTeam, awayTeam) {
+  if (!match || match.status !== 'pending') return
+  match.homeTeam = homeTeam
+  match.awayTeam = awayTeam
+}
+
+function refreshPendingPlacementTeamsFromStandings(tournament) {
+  const standings = calculateGroupStandings(tournament)
+  const teamCount = tournament.teamCount || ((tournament.teams || []).length)
+  const getRank = (groupName, rank) => getGroupRankTeamId(standings, groupName, rank)
+
+  if (teamCount === 10) {
+    setPendingMatchTeams(
+      tournament.matches.find(m => m.stage === 'final'),
+      getRank('A', 1),
+      getRank('B', 1)
+    )
+    setPendingMatchTeams(
+      tournament.matches.find(m => m.stage === 'third'),
+      getRank('A', 2),
+      getRank('B', 2)
+    )
+    setPendingMatchTeams(
+      tournament.matches.find(m => m.stage === 'fifth'),
+      getRank('A', 3),
+      getRank('B', 3)
+    )
+    setPendingMatchTeams(
+      tournament.matches.find(m => m.stage === 'seventh'),
+      getRank('A', 4),
+      getRank('B', 4)
+    )
+    setPendingMatchTeams(
+      tournament.matches.find(m => m.stage === 'ninth'),
+      getRank('A', 5),
+      getRank('B', 5)
+    )
+    return tournament
+  }
+
+  setPendingMatchTeams(
+    tournament.matches.find(m => m.stage === 'semi' && m.matchLabel === '半决赛1'),
+    getRank('A', 1),
+    getRank('B', 2)
+  )
+  setPendingMatchTeams(
+    tournament.matches.find(m => m.stage === 'semi' && m.matchLabel === '半决赛2'),
+    getRank('B', 1),
+    getRank('A', 2)
+  )
+
+  if (teamCount === 8) {
+    setPendingMatchTeams(
+      tournament.matches.find(m => m.stage === 'place5semi' && m.matchLabel === '5-8名排位赛1'),
+      getRank('A', 3),
+      getRank('B', 4)
+    )
+    setPendingMatchTeams(
+      tournament.matches.find(m => m.stage === 'place5semi' && m.matchLabel === '5-8名排位赛2'),
+      getRank('B', 3),
+      getRank('A', 4)
+    )
+  } else {
+    setPendingMatchTeams(
+      tournament.matches.find(m => m.stage === 'fifth'),
+      getRank('A', 3),
+      getRank('B', 3)
+    )
+  }
+
+  return tournament
+}
+
+function refreshPendingFinalTeams(tournament) {
+  const semi1 = tournament.matches.find(m => m.stage === 'semi' && m.matchLabel === '半决赛1' && m.status === 'finished')
+  const semi2 = tournament.matches.find(m => m.stage === 'semi' && m.matchLabel === '半决赛2' && m.status === 'finished')
+  if (!semi1 || !semi2) return tournament
+
+  const winner1 = resolveMatchWinnerTeamId(semi1)
+  const winner2 = resolveMatchWinnerTeamId(semi2)
+  if (!winner1 || !winner2) return tournament
+
+  const loser1 = winner1 === semi1.homeTeam ? semi1.awayTeam : semi1.homeTeam
+  const loser2 = winner2 === semi2.homeTeam ? semi2.awayTeam : semi2.homeTeam
+
+  setPendingMatchTeams(
+    tournament.matches.find(m => m.stage === 'final'),
+    winner1,
+    winner2
+  )
+  setPendingMatchTeams(
+    tournament.matches.find(m => m.stage === 'third'),
+    loser1,
+    loser2
+  )
+  return tournament
+}
+
+function refreshPendingLowerPlacementTeams(tournament) {
+  const played = tournament.matches
+    .filter(m => m.stage === 'place5semi' && m.status === 'finished')
+    .sort((a, b) => String(a.matchLabel || '').localeCompare(String(b.matchLabel || '')))
+  if (played.length < 2) return tournament
+
+  const winners = played.map(resolveMatchWinnerTeamId)
+  if (winners.some(teamId => !teamId)) return tournament
+  const losers = played.map((match, index) => (
+    winners[index] === match.homeTeam ? match.awayTeam : match.homeTeam
+  ))
+
+  setPendingMatchTeams(
+    tournament.matches.find(m => m.stage === 'fifth'),
+    winners[0],
+    winners[1]
+  )
+  setPendingMatchTeams(
+    tournament.matches.find(m => m.stage === 'seventh'),
+    losers[0],
+    losers[1]
+  )
+  return tournament
+}
+
 /**
  * 两轮空规则：小组赛结束后，将实际队伍落位到预创建的淘汰赛
  */
@@ -1094,22 +1217,13 @@ function fillTwoByeKnockoutTeams(tournament) {
 
   // 落位半决赛
   const semi1 = tournament.matches.find(m => m.stage === 'semi' && m.matchLabel === '半决赛1')
-  if (semi1) {
-    semi1.homeTeam = r1
-    semi1.awayTeam = r4
-  }
+  setPendingMatchTeams(semi1, r1, r4)
   const semi2 = tournament.matches.find(m => m.stage === 'semi' && m.matchLabel === '半决赛2')
-  if (semi2) {
-    semi2.homeTeam = r2
-    semi2.awayTeam = r3
-  }
+  setPendingMatchTeams(semi2, r2, r3)
 
   // 落位五六名
   const fifth = tournament.matches.find(m => m.stage === 'fifth')
-  if (fifth) {
-    fifth.homeTeam = r5
-    fifth.awayTeam = r6
-  }
+  setPendingMatchTeams(fifth, r5, r6)
 
   tournament.stage = 'semi'
   saveTournament(tournament)
@@ -1120,33 +1234,7 @@ function fillTwoByeKnockoutTeams(tournament) {
  * 两轮空规则：半决赛结束后，将实际队伍落位到决赛和三四名
  */
 function fillTwoByeFinalTeams(tournament) {
-  const semiMatches = tournament.matches.filter(m => m.stage === 'semi' && m.status === 'finished')
-  if (semiMatches.length < 2) return tournament
-
-  const semi1 = tournament.matches.find(m => m.stage === 'semi' && m.matchLabel === '半决赛1' && m.status === 'finished')
-  const semi2 = tournament.matches.find(m => m.stage === 'semi' && m.matchLabel === '半决赛2' && m.status === 'finished')
-  if (!semi1 || !semi2) return tournament
-
-  const winner1 = resolveMatchWinnerTeamId(semi1)
-  const winner2 = resolveMatchWinnerTeamId(semi2)
-  if (!winner1 || !winner2) return tournament
-
-  const loser1 = winner1 === semi1.homeTeam ? semi1.awayTeam : semi1.homeTeam
-  const loser2 = winner2 === semi2.homeTeam ? semi2.awayTeam : semi2.homeTeam
-
-  // 落位决赛
-  const finalMatch = tournament.matches.find(m => m.stage === 'final')
-  if (finalMatch && !finalMatch.homeTeam) {
-    finalMatch.homeTeam = winner1
-    finalMatch.awayTeam = winner2
-  }
-
-  // 落位三四名
-  const thirdMatch = tournament.matches.find(m => m.stage === 'third')
-  if (thirdMatch && !thirdMatch.homeTeam) {
-    thirdMatch.homeTeam = loser1
-    thirdMatch.awayTeam = loser2
-  }
+  refreshPendingFinalTeams(tournament)
 
   tournament.stage = 'final'
   saveTournament(tournament)
@@ -1165,17 +1253,11 @@ function fillFourTeamFinalTeams(tournament) {
 
   // 落位冠亚军决赛
   const finalMatch = tournament.matches.find(m => m.stage === 'final')
-  if (finalMatch) {
-    finalMatch.homeTeam = r1
-    finalMatch.awayTeam = r2
-  }
+  setPendingMatchTeams(finalMatch, r1, r2)
 
   // 落位三四名决赛
   const thirdMatch = tournament.matches.find(m => m.stage === 'third')
-  if (thirdMatch) {
-    thirdMatch.homeTeam = r3
-    thirdMatch.awayTeam = r4
-  }
+  setPendingMatchTeams(thirdMatch, r3, r4)
 
   tournament.stage = 'final'
   saveTournament(tournament)
@@ -1204,7 +1286,7 @@ function generateKnockoutMatches(tournament) {
   }
 
   const existingPlacement = (tournament.matches || []).some(m => m.stage !== 'group')
-  if (existingPlacement) return tournament
+  if (existingPlacement) return refreshPendingPlacementTeamsFromStandings(tournament)
 
   const standings = calculateGroupStandings(tournament)
   const teamCount = tournament.teamCount || ((tournament.teams || []).length)
@@ -1318,7 +1400,7 @@ function generateLowerPlacementMatchesForEight(tournament) {
   if (played.length < 2) return tournament
 
   const exists = tournament.matches.some(m => m.stage === 'fifth' || m.stage === 'seventh')
-  if (exists) return tournament
+  if (exists) return refreshPendingLowerPlacementTeams(tournament)
 
   const winners = []
   const losers = []
@@ -1357,7 +1439,7 @@ function generateFinalMatches(tournament) {
   if (semiMatches.length < 2) return tournament
 
   const exists = tournament.matches.some(m => m.stage === 'third' || m.stage === 'final')
-  if (exists) return tournament
+  if (exists) return refreshPendingFinalTeams(tournament)
 
   const winners = []
   const losers = []
@@ -1559,6 +1641,42 @@ function startMatch(tournamentId, matchId) {
 }
 
 /**
+ * 重新打开已结束的比赛进行纠错。
+ * 保留比分、事件和已进行时长，不覆盖已经开始的后续比赛。
+ */
+function reopenMatch(tournamentId, matchId) {
+  if (!canManageTournaments()) return null
+  const tournaments = getTournaments()
+  const tournament = tournaments.find(t => t.id === tournamentId)
+  if (!tournament) return null
+
+  const match = tournament.matches.find(m => m.id === matchId)
+  if (!match || match.status !== 'finished') return null
+
+  const finishedAt = Number(match.endTime) || Date.now()
+  const startedAt = Number(match.startTime) || finishedAt
+  const playedMs = Math.max(0, finishedAt - startedAt)
+
+  match.status = 'playing'
+  match.startTime = Date.now() - playedMs
+  match.endTime = null
+  match.reopenedAt = Date.now()
+
+  if (tournament.stage === 'finished') {
+    if (match.stage === 'group') {
+      tournament.stage = 'group'
+    } else if (match.stage === 'semi' || match.stage === 'place5semi') {
+      tournament.stage = 'semi'
+    } else {
+      tournament.stage = 'final'
+    }
+  }
+
+  saveTournament(tournament)
+  return tournament
+}
+
+/**
  * 结束比赛
  */
 function finishMatch(tournamentId, matchId, finishData) {
@@ -1593,6 +1711,13 @@ function finishMatch(tournamentId, matchId, finishData) {
     match.penaltyAwayShots = awayShots || []
     match.penaltyRule = finishData.penaltyRule || '3+1+1+1'
     match.penaltyNote = finishData.penaltyNote || ''
+  } else {
+    delete match.penaltyHomeScore
+    delete match.penaltyAwayScore
+    match.penaltyHomeShots = []
+    match.penaltyAwayShots = []
+    match.penaltyRule = ''
+    match.penaltyNote = ''
   }
 
   match.status = 'finished'
@@ -2064,6 +2189,7 @@ module.exports = {
   addMatchEvent,
   removeMatchEvent,
   startMatch,
+  reopenMatch,
   finishMatch,
   updateMatchSchedule,
   updatePlayerDisplayName,

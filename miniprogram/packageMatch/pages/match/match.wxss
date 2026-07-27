@@ -135,6 +135,30 @@
   border: none;
 }
 
+.reopen-actions {
+  text-align: center;
+}
+
+.btn-reopen {
+  background: #fff;
+  color: #e65100;
+  border: 2rpx solid #ff9800;
+  border-radius: 12rpx;
+  font-size: 30rpx;
+  padding: 18rpx 0;
+}
+
+.btn-reopen::after {
+  border: none;
+}
+
+.reopen-tip {
+  display: block;
+  margin-top: 12rpx;
+  color: #999;
+  font-size: 22rpx;
+}
+
 /* 时间线 */
 .timeline {
   padding-left: 10rpx;

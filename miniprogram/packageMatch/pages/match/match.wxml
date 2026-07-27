@@ -63,6 +63,11 @@
     </block>
   </view>
 
+  <view class="action-buttons reopen-actions" wx:if="{{isAdmin && match.status === 'finished'}}">
+    <button class="btn-reopen" bindtap="reopenMatch">重新编辑比赛</button>
+    <text class="reopen-tip">保留当前记录，重新打开后可增删进球、红黄牌并再次结束</text>
+  </view>
+
   <!-- 比赛事件时间线 -->
   <view class="card" wx:if="{{events.length > 0}}">
     <view class="section-title">比赛事件</view>

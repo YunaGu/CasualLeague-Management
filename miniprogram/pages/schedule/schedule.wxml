@@ -65,6 +65,7 @@
               <view class="action-btn edit" catchtap="editScheduleTap" data-id="{{match.id}}">编辑排程</view>
               <view class="action-btn start" wx:if="{{match.status === 'pending'}}" catchtap="startMatchFromList" data-id="{{match.id}}">开始比赛</view>
               <view class="action-btn finish" wx:if="{{match.status === 'playing'}}" catchtap="finishMatchFromList" data-id="{{match.id}}">结束比赛</view>
+              <view class="action-btn reopen" wx:if="{{match.status === 'finished'}}" catchtap="reopenMatchFromList" data-id="{{match.id}}">重新编辑</view>
             </view>
           </view>
         </view>
@@ -118,6 +119,7 @@
             <view class="action-btn edit" catchtap="editScheduleTap" data-id="{{item.id}}">编辑排程</view>
             <view class="action-btn start" wx:if="{{!item.preview && item.status === 'pending'}}" catchtap="startMatchFromList" data-id="{{item.id}}">开始比赛</view>
             <view class="action-btn finish" wx:if="{{!item.preview && item.status === 'playing'}}" catchtap="finishMatchFromList" data-id="{{item.id}}">结束比赛</view>
+            <view class="action-btn reopen" wx:if="{{!item.preview && item.status === 'finished'}}" catchtap="reopenMatchFromList" data-id="{{item.id}}">重新编辑</view>
           </view>
         </view>
       </view>

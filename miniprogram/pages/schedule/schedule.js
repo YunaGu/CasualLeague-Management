@@ -616,6 +616,31 @@ Page({
     })
   },
 
+  reopenMatchFromList(e) {
+    if (!this.ensureAdmin()) return
+    const matchId = e.currentTarget.dataset.id
+    const current = this.data.currentTournament
+    if (!current || !matchId) return
+
+    wx.showModal({
+      title: '重新编辑比赛',
+      content: '已有比分和事件会保留。若后续比赛已经开始，其对阵不会被自动更改。',
+      confirmText: '重新编辑',
+      success: (res) => {
+        if (!res.confirm) return
+        const result = tournament.reopenMatch(current.id, matchId)
+        if (!result) {
+          wx.showToast({ title: '重新打开失败', icon: 'none' })
+          return
+        }
+        this.loadData()
+        wx.navigateTo({
+          url: `/packageMatch/pages/match/match?matchId=${matchId}`
+        })
+      }
+    })
+  },
+
   editScheduleTap(e) {
     if (!this.ensureAdmin()) return
     const matchId = e.currentTarget.dataset.id

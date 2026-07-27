@@ -244,6 +244,11 @@
   color: #b71c1c;
 }
 
+.action-btn.reopen {
+  background: #fff3e0;
+  color: #e65100;
+}
+
 /* 淘汰赛标签 */
 .knockout-label {
   font-size: 24rpx;

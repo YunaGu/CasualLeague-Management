@@ -162,6 +162,29 @@ Page({
     }
   },
 
+  reopenMatch() {
+    if (!this.ensureAdmin()) return
+    wx.showModal({
+      title: '重新编辑比赛',
+      content: '已有比分和事件会保留。若后续比赛已经开始，其对阵不会被自动更改。',
+      confirmText: '重新编辑',
+      success: (res) => {
+        if (!res.confirm) return
+        const result = tournament.reopenMatch(
+          this.data.currentTournament.id,
+          this.data.matchId
+        )
+        if (!result) {
+          wx.showToast({ title: '重新打开失败', icon: 'none' })
+          return
+        }
+        wx.showToast({ title: '已恢复编辑', icon: 'success' })
+        this.loadData()
+        this.startTimerIfNeeded()
+      }
+    })
+  },
+
   // 结束比赛
   finishMatch() {
     if (!this.ensureAdmin()) return
@@ -170,14 +193,20 @@ Page({
     const isDraw = match && match.homeScore === match.awayScore
 
     if (isKnockout && isDraw) {
+      const homeShots = Array.isArray(match.penaltyHomeShots)
+        ? [...match.penaltyHomeShots]
+        : []
+      const awayShots = Array.isArray(match.penaltyAwayShots)
+        ? [...match.penaltyAwayShots]
+        : []
       this.setData({
         showPenaltyModal: true,
-        penaltyHomeShots: [],
-        penaltyAwayShots: [],
-        penaltyHomeCount: 0,
-        penaltyAwayCount: 0,
-        penaltyRule: '3+1+1+1',
-        penaltyNote: ''
+        penaltyHomeShots: homeShots,
+        penaltyAwayShots: awayShots,
+        penaltyHomeCount: homeShots.filter(Boolean).length,
+        penaltyAwayCount: awayShots.filter(Boolean).length,
+        penaltyRule: match.penaltyRule || '3+1+1+1',
+        penaltyNote: match.penaltyNote || ''
       })
       return
     }
