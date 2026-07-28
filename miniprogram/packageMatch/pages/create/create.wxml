@@ -116,17 +116,17 @@
         </view>
         <view class="config-col">
           <view class="config-label">场间间隔(分钟)</view>
-          <input class="input" type="number" value="{{breakMinutes}}" bindinput="onBreakMinutesInput" />
+          <input class="input" type="number" value="{{breakMinutes}}" bindinput="onBreakMinutesInput" bindblur="onBreakMinutesBlur" />
         </view>
       </view>
       <view class="config-row">
         <view class="config-col">
           <view class="config-label">{{stageDurationLabel}}</view>
-          <input class="input" type="number" value="{{groupMatchMinutes}}" bindinput="onGroupMinutesInput" />
+          <input class="input" type="number" value="{{groupMatchMinutes}}" bindinput="onGroupMinutesInput" bindblur="onGroupMinutesBlur" />
         </view>
         <view class="config-col">
           <view class="config-label">排位赛每场(分钟)</view>
-          <input class="input" type="number" value="{{knockoutMatchMinutes}}" bindinput="onKnockoutMinutesInput" />
+          <input class="input" type="number" value="{{knockoutMatchMinutes}}" bindinput="onKnockoutMinutesInput" bindblur="onKnockoutMinutesBlur" />
         </view>
       </view>
     </view>

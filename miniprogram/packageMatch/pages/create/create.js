@@ -202,15 +202,30 @@ Page({
   },
 
   onGroupMinutesInput(e) {
-    this.setData({ groupMatchMinutes: parseInt(e.detail.value || '12', 10) })
+    this.setData({ groupMatchMinutes: e.detail.value })
+  },
+
+  onGroupMinutesBlur(e) {
+    const value = parseInt(e.detail.value, 10)
+    this.setData({ groupMatchMinutes: Number.isFinite(value) && value > 0 ? value : 12 })
   },
 
   onKnockoutMinutesInput(e) {
-    this.setData({ knockoutMatchMinutes: parseInt(e.detail.value || '20', 10) })
+    this.setData({ knockoutMatchMinutes: e.detail.value })
+  },
+
+  onKnockoutMinutesBlur(e) {
+    const value = parseInt(e.detail.value, 10)
+    this.setData({ knockoutMatchMinutes: Number.isFinite(value) && value > 0 ? value : 20 })
   },
 
   onBreakMinutesInput(e) {
-    this.setData({ breakMinutes: parseInt(e.detail.value || '3', 10) })
+    this.setData({ breakMinutes: e.detail.value })
+  },
+
+  onBreakMinutesBlur(e) {
+    const value = parseInt(e.detail.value, 10)
+    this.setData({ breakMinutes: Number.isFinite(value) && value >= 0 ? value : 3 })
   },
 
   onTemplateChange(e) {
@@ -365,10 +380,24 @@ Page({
       return
     }
 
-    if (!(groupMatchMinutes > 0) || !(knockoutMatchMinutes > 0) || breakMinutes < 0) {
+    const normalizedGroupMatchMinutes = parseInt(groupMatchMinutes, 10)
+    const normalizedKnockoutMatchMinutes = parseInt(knockoutMatchMinutes, 10)
+    const normalizedBreakMinutes = parseInt(breakMinutes, 10)
+
+    if (
+      !(normalizedGroupMatchMinutes > 0) ||
+      !(normalizedKnockoutMatchMinutes > 0) ||
+      !(normalizedBreakMinutes >= 0)
+    ) {
       wx.showToast({ title: '请检查时长与间隔配置', icon: 'none' })
       return
     }
+
+    this.setData({
+      groupMatchMinutes: normalizedGroupMatchMinutes,
+      knockoutMatchMinutes: normalizedKnockoutMatchMinutes,
+      breakMinutes: normalizedBreakMinutes
+    })
 
     const templateConfig = this.getTemplateConfig()
     if (templateConfig.id === 'two-bye') {
