@@ -10,9 +10,11 @@
   </view>
 
   <view class="card" wx:if="{{!isAdmin}}">
-    <view class="section-title">只读模式</view>
+    <view class="readonly-mode-header">
+      <view class="section-title">只读模式</view>
+      <view wx:if="{{userOpenid}}" class="copy-admin-id-badge" bindtap="copyUserOpenid">复制配置 ID</view>
+    </view>
     <text style="display: block; color: #666; font-size: 26rpx;">你可以查看全部公开赛事，但不能创建、记分、修改或删除。</text>
-    <button wx:if="{{userOpenid}}" class="btn-secondary" size="mini" style="margin-top: 20rpx;" bindtap="copyUserOpenid">复制我的管理员配置 ID</button>
   </view>
 
   <!-- 有赛事时的主页 -->
