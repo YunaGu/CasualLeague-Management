@@ -184,6 +184,12 @@
   opacity: 0.7;
 }
 
+.delete-btn {
+  color: #e64340;
+  font-size: 34rpx;
+  line-height: 1;
+}
+
 .template-desc {
   font-size: 22rpx;
   color: #666;

@@ -90,7 +90,7 @@
           <view style="display: flex; align-items: center; gap: 16rpx;">
             <text class="tournament-item-count">{{item.teamCount}}队</text>
             <view wx:if="{{isAdmin}}" class="tournament-delete-btn" catchtap="deleteTournament" data-id="{{item.id}}" data-name="{{item.name}}">
-              <text class="tournament-delete-icon">🗑</text>
+              <text class="tournament-delete-icon">×</text>
             </view>
           </view>
         </view>

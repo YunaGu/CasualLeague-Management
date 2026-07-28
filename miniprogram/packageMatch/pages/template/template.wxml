@@ -49,7 +49,7 @@
               bindtap="showDeleteConfirm"
               data-template-id="{{item.id}}"
               catchbubble
-            >🗑️</text>
+            >×</text>
           </view>
         </view>
 
