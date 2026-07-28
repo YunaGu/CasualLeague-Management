@@ -33,39 +33,86 @@
       <text wx:if="{{match.penaltyRule}}">（{{match.penaltyRule}}）</text>
     </view>
     <view class="penalty-note" wx:if="{{match.status === 'finished' && match.penaltyNote}}">{{match.penaltyNote}}</view>
+    <view class="quick-mode-notice" wx:if="{{match.scoreEntryMode === 'quick' || unregisteredGoalCount > 0}}">
+      <text class="quick-mode-title">⚡ 快速计分</text>
+      <text wx:if="{{unregisteredGoalCount > 0}}">有 {{unregisteredGoalCount}} 个进球未登记到具体球员，不计入射手榜。</text>
+      <text wx:else>本场未登记具体进球球员或红黄牌。</text>
+    </view>
   </view>
 
   <!-- 操作按钮 -->
   <view class="action-buttons" wx:if="{{isAdmin && match.status !== 'finished'}}">
-    <button class="btn-primary" wx:if="{{match.status === 'pending'}}" bindtap="startMatch">开始比赛</button>
+    <view class="entry-mode-buttons" wx:if="{{match.status === 'pending'}}">
+      <button class="btn-primary entry-mode-button" bindtap="startMatch">开始详细记录</button>
+      <button class="btn-quick entry-mode-button" bindtap="openQuickScore">快速计分</button>
+    </view>
     <block wx:if="{{match.status === 'playing'}}">
-      <view class="event-buttons">
-        <view class="event-btn goal" bindtap="openEventModal" data-type="goal" data-team="{{homeTeam.id}}">
-          <text class="event-btn-icon">⚽</text>
-          <text class="event-btn-text">{{homeTeam.name}}进球</text>
+      <block wx:if="{{match.scoreEntryMode === 'quick'}}">
+        <view class="quick-running-actions">
+          <button class="btn-quick" bindtap="openQuickScore">修改比分 / 结束比赛</button>
+          <button class="btn-detail-switch" bindtap="switchToDetailedMode">切换到详细记录</button>
         </view>
-        <view class="event-btn goal" bindtap="openEventModal" data-type="goal" data-team="{{awayTeam.id}}">
-          <text class="event-btn-icon">⚽</text>
-          <text class="event-btn-text">{{awayTeam.name}}进球</text>
+      </block>
+      <block wx:else>
+        <button class="btn-quick-outline" bindtap="openQuickScore">⚡ 快速计分</button>
+        <view class="event-buttons">
+          <view class="event-btn goal" bindtap="openEventModal" data-type="goal" data-team="{{homeTeam.id}}">
+            <text class="event-btn-icon">⚽</text>
+            <text class="event-btn-text">{{homeTeam.name}}进球</text>
+          </view>
+          <view class="event-btn goal" bindtap="openEventModal" data-type="goal" data-team="{{awayTeam.id}}">
+            <text class="event-btn-icon">⚽</text>
+            <text class="event-btn-text">{{awayTeam.name}}进球</text>
+          </view>
         </view>
-      </view>
-      <view class="event-buttons">
-        <view class="event-btn yellow" bindtap="openEventModal" data-type="yellow" data-team="">
-          <text class="event-btn-icon">🟡</text>
-          <text class="event-btn-text">黄牌</text>
+        <view class="event-buttons">
+          <view class="event-btn yellow" bindtap="openEventModal" data-type="yellow" data-team="">
+            <text class="event-btn-icon">🟡</text>
+            <text class="event-btn-text">黄牌</text>
+          </view>
+          <view class="event-btn red" bindtap="openEventModal" data-type="red" data-team="">
+            <text class="event-btn-icon">🔴</text>
+            <text class="event-btn-text">红牌</text>
+          </view>
         </view>
-        <view class="event-btn red" bindtap="openEventModal" data-type="red" data-team="">
-          <text class="event-btn-icon">🔴</text>
-          <text class="event-btn-text">红牌</text>
-        </view>
-      </view>
-      <button class="btn-finish" bindtap="finishMatch">结束比赛</button>
+        <button class="btn-finish" bindtap="finishMatch">结束比赛</button>
+      </block>
     </block>
   </view>
 
   <view class="action-buttons reopen-actions" wx:if="{{isAdmin && match.status === 'finished'}}">
     <button class="btn-reopen" bindtap="reopenMatch">重新编辑比赛</button>
     <text class="reopen-tip">保留当前记录，重新打开后可增删进球、红黄牌并再次结束</text>
+  </view>
+
+  <view class="card supplement-card" wx:if="{{isAdmin && match.status === 'finished' && match.quickScoreUpdatedAt}}">
+    <view class="section-title supplement-title">赛后补录事件</view>
+    <view class="supplement-tip">
+      补录事件不会改变 {{match.homeScore}} : {{match.awayScore}} 的正式比分；红黄牌仍会计入纪律统计和公平竞赛规则。
+    </view>
+    <view class="supplement-remaining" wx:if="{{unregisteredGoalCount > 0}}">
+      待补录进球：{{homeTeam.name}} {{unregisteredHomeGoalCount}} 个 ｜ {{awayTeam.name}} {{unregisteredAwayGoalCount}} 个
+    </view>
+    <view class="event-buttons" wx:if="{{unregisteredGoalCount > 0}}">
+      <view class="event-btn goal" wx:if="{{unregisteredHomeGoalCount > 0}}" bindtap="openEventModal" data-supplement="1" data-type="goal" data-team="{{homeTeam.id}}">
+        <text class="event-btn-icon">⚽</text>
+        <text class="event-btn-text">补录{{homeTeam.name}}进球</text>
+      </view>
+      <view class="event-btn goal" wx:if="{{unregisteredAwayGoalCount > 0}}" bindtap="openEventModal" data-supplement="1" data-type="goal" data-team="{{awayTeam.id}}">
+        <text class="event-btn-icon">⚽</text>
+        <text class="event-btn-text">补录{{awayTeam.name}}进球</text>
+      </view>
+    </view>
+    <view class="event-buttons supplement-card-buttons">
+      <view class="event-btn yellow" bindtap="openEventModal" data-supplement="1" data-type="yellow" data-team="">
+        <text class="event-btn-icon">🟡</text>
+        <text class="event-btn-text">补录黄牌</text>
+      </view>
+      <view class="event-btn red" bindtap="openEventModal" data-supplement="1" data-type="red" data-team="">
+        <text class="event-btn-icon">🔴</text>
+        <text class="event-btn-text">补录红牌</text>
+      </view>
+    </view>
   </view>
 
   <!-- 比赛事件时间线 -->
@@ -77,14 +124,57 @@
         <view class="timeline-content">
           <view class="timeline-main">
             <text class="timeline-player">#{{item.playerNumber}} {{item.playerName}}</text>
-            <text class="timeline-team">{{item.teamName}}</text>
+            <view class="timeline-team-row">
+              <text class="timeline-team">{{item.teamName}}</text>
+              <text class="supplement-badge" wx:if="{{item.source === 'supplement'}}">补录</text>
+            </view>
           </view>
           <text class="timeline-minute" wx:if="{{item.minute}}">{{item.minute}}'</text>
         </view>
-        <view class="timeline-delete" bindtap="removeEvent" data-event-id="{{item.id}}" wx:if="{{isAdmin && match.status === 'playing'}}">
+        <view class="timeline-delete" bindtap="removeEvent" data-event-id="{{item.id}}" data-supplement="{{item.source === 'supplement' ? '1' : '0'}}" wx:if="{{isAdmin && (match.status === 'playing' || item.source === 'supplement')}}">
           <text>×</text>
         </view>
       </view>
+    </view>
+  </view>
+</view>
+
+<!-- 快速计分弹窗 -->
+<view class="modal-mask" wx:if="{{showQuickScoreModal}}" bindtap="closeQuickScore">
+  <view class="modal-content quick-score-modal" catchtap="noop">
+    <view class="modal-title">⚡ 快速计分</view>
+    <view class="modal-body">
+      <view class="quick-score-board">
+        <view class="quick-score-team">
+          <text class="quick-score-team-name">{{homeTeam.name}}</text>
+          <view class="quick-score-control">
+            <view class="quick-score-step" bindtap="adjustQuickScore" data-side="home" data-delta="-1">−</view>
+            <input class="quick-score-input" type="number" maxlength="2" value="{{quickHomeScore}}" bindinput="onQuickScoreInput" data-side="home" />
+            <view class="quick-score-step plus" bindtap="adjustQuickScore" data-side="home" data-delta="1">＋</view>
+          </view>
+        </view>
+        <text class="quick-score-colon">:</text>
+        <view class="quick-score-team">
+          <text class="quick-score-team-name">{{awayTeam.name}}</text>
+          <view class="quick-score-control">
+            <view class="quick-score-step" bindtap="adjustQuickScore" data-side="away" data-delta="-1">−</view>
+            <input class="quick-score-input" type="number" maxlength="2" value="{{quickAwayScore}}" bindinput="onQuickScoreInput" data-side="away" />
+            <view class="quick-score-step plus" bindtap="adjustQuickScore" data-side="away" data-delta="1">＋</view>
+          </view>
+        </view>
+      </view>
+      <view class="quick-points-preview" wx:if="{{!quickIsKnockout}}">
+        本场积分：{{homeTeam.name}} +{{quickHomePoints}} ｜ {{awayTeam.name}} +{{quickAwayPoints}}
+      </view>
+      <view class="quick-points-preview knockout" wx:else>
+        淘汰赛不计积分；常规比分相同时需继续录入点球。
+      </view>
+      <view class="quick-score-help">快速比分不会自动计入球员射手榜或红黄牌统计。</view>
+    </view>
+    <view class="quick-score-footer">
+      <button class="btn-cancel quick-footer-button" bindtap="closeQuickScore">取消</button>
+      <button class="btn-save-score quick-footer-button" bindtap="saveQuickScore">仅保存</button>
+      <button class="btn-finish-score quick-footer-button" bindtap="finishQuickScore">保存并结束</button>
     </view>
   </view>
 </view>
@@ -142,7 +232,7 @@
 <view class="modal-mask" wx:if="{{showEventModal}}" bindtap="closeEventModal">
   <view class="modal-content" catchtap="noop">
     <view class="modal-title">
-      记录{{eventType === 'goal' ? '进球' : eventType === 'yellow' ? '黄牌' : '红牌'}}
+      {{eventIsSupplement ? '补录' : '记录'}}{{eventType === 'goal' ? '进球' : eventType === 'yellow' ? '黄牌' : '红牌'}}
     </view>
     <view class="modal-body">
       <!-- 事件类型选择 -->
@@ -175,7 +265,8 @@
 
       <view class="modal-section">
         <view class="modal-label">记录时间</view>
-        <view class="auto-minute">自动记录为第 {{elapsedMinute}} 分钟（当前已进行 {{elapsedText}}）</view>
+        <input wx:if="{{eventIsSupplement}}" class="input minute-input" type="number" placeholder="可选，例如 12" value="{{eventMinuteInput}}" bindinput="onEventMinuteInput" />
+        <view wx:else class="auto-minute">自动记录为第 {{elapsedMinute}} 分钟（当前已进行 {{elapsedText}}）</view>
       </view>
     </view>
     <view class="modal-footer">

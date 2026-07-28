@@ -13,6 +13,8 @@ Page({
     eventType: 'goal', // goal, yellow, red
     eventTeamId: '',
     eventPlayerNumber: '',
+    eventIsSupplement: false,
+    eventMinuteInput: '',
     showPenaltyModal: false,
     penaltyHomeShots: [],
     penaltyAwayShots: [],
@@ -22,7 +24,16 @@ Page({
     penaltyNote: '',
     elapsedText: '00:00',
     elapsedMinute: 1,
-    isAdmin: false
+    isAdmin: false,
+    unregisteredGoalCount: 0,
+    unregisteredHomeGoalCount: 0,
+    unregisteredAwayGoalCount: 0,
+    showQuickScoreModal: false,
+    quickHomeScore: 0,
+    quickAwayScore: 0,
+    quickHomePoints: 1,
+    quickAwayPoints: 1,
+    quickIsKnockout: false
   },
 
   onLoad(options) {
@@ -88,6 +99,7 @@ Page({
 
     const homeTeam = current.teams.find(t => t.id === match.homeTeam)
     const awayTeam = current.teams.find(t => t.id === match.awayTeam)
+    const unregisteredGoals = tournament.getMatchUnregisteredGoals(match)
 
     // 映射事件显示信息
     const events = (match.events || []).map(e => {
@@ -109,7 +121,10 @@ Page({
       match,
       homeTeam,
       awayTeam,
-      events
+      events,
+      unregisteredGoalCount: unregisteredGoals.total,
+      unregisteredHomeGoalCount: unregisteredGoals.home,
+      unregisteredAwayGoalCount: unregisteredGoals.away
     })
 
     this.updateElapsed(match)
@@ -160,6 +175,142 @@ Page({
       this.loadData()
       this.startTimerIfNeeded()
     }
+  },
+
+  openQuickScore() {
+    if (!this.ensureAdmin()) return
+    const { match } = this.data
+    if (!match || match.status === 'finished') return
+    const homeScore = Number.isFinite(Number(match.homeScore)) ? Number(match.homeScore) : 0
+    const awayScore = Number.isFinite(Number(match.awayScore)) ? Number(match.awayScore) : 0
+    this.setData({
+      showQuickScoreModal: true,
+      quickHomeScore: homeScore,
+      quickAwayScore: awayScore,
+      quickIsKnockout: match.stage !== 'group'
+    })
+    this.updateQuickPoints(homeScore, awayScore)
+  },
+
+  closeQuickScore() {
+    this.setData({ showQuickScoreModal: false })
+  },
+
+  onQuickScoreInput(e) {
+    const side = e.currentTarget.dataset.side
+    const value = e.detail.value
+    if (side === 'home') {
+      this.setData({ quickHomeScore: value })
+    } else {
+      this.setData({ quickAwayScore: value })
+    }
+    this.updateQuickPoints(
+      side === 'home' ? value : this.data.quickHomeScore,
+      side === 'away' ? value : this.data.quickAwayScore
+    )
+  },
+
+  adjustQuickScore(e) {
+    const side = e.currentTarget.dataset.side
+    const delta = Number(e.currentTarget.dataset.delta) || 0
+    const key = side === 'home' ? 'quickHomeScore' : 'quickAwayScore'
+    const current = parseInt(this.data[key], 10) || 0
+    const value = Math.max(0, Math.min(99, current + delta))
+    this.setData({ [key]: value })
+    this.updateQuickPoints(
+      side === 'home' ? value : this.data.quickHomeScore,
+      side === 'away' ? value : this.data.quickAwayScore
+    )
+  },
+
+  updateQuickPoints(homeInput, awayInput) {
+    const home = parseInt(homeInput, 10) || 0
+    const away = parseInt(awayInput, 10) || 0
+    let homePoints = 1
+    let awayPoints = 1
+    if (home > away) {
+      homePoints = 3
+      awayPoints = 0
+    } else if (away > home) {
+      homePoints = 0
+      awayPoints = 3
+    }
+    this.setData({
+      quickHomePoints: homePoints,
+      quickAwayPoints: awayPoints
+    })
+  },
+
+  saveQuickScore() {
+    const result = this.persistQuickScore()
+    if (!result) return
+    this.closeQuickScore()
+    this.loadData()
+    this.startTimerIfNeeded()
+    wx.showToast({ title: '比分已保存', icon: 'success' })
+  },
+
+  finishQuickScore() {
+    const result = this.persistQuickScore()
+    if (!result) return
+    this.closeQuickScore()
+    this.loadData()
+
+    const { match } = this.data
+    if (match.stage !== 'group' && match.homeScore === match.awayScore) {
+      this.finishMatch()
+      return
+    }
+
+    const finished = tournament.finishMatch(
+      this.data.currentTournament.id,
+      this.data.matchId
+    )
+    if (!finished) {
+      wx.showToast({ title: '比赛结束失败', icon: 'none' })
+      return
+    }
+    wx.showToast({ title: '比分已保存，比赛结束', icon: 'success' })
+    this.loadData()
+    this.clearTimer()
+  },
+
+  persistQuickScore() {
+    const result = tournament.updateMatchScoreQuickly(
+      this.data.currentTournament.id,
+      this.data.matchId,
+      this.data.quickHomeScore,
+      this.data.quickAwayScore
+    )
+    if (result.ok) return result
+
+    const title = result.reason === 'below-recorded-goals'
+      ? `比分不能低于已登记进球（${result.recordedHomeGoals}:${result.recordedAwayGoals}）`
+      : '请输入 0-99 的整数比分'
+    wx.showToast({ title, icon: 'none', duration: 3000 })
+    return null
+  },
+
+  switchToDetailedMode() {
+    if (!this.ensureAdmin()) return
+    wx.showModal({
+      title: '切换到详细记录',
+      content: '当前正式比分会保留。之后新增的进球事件会继续增加比分，之前未登记的进球不会自动分配给球员。',
+      confirmText: '切换',
+      success: (res) => {
+        if (!res.confirm) return
+        const result = tournament.setMatchScoreEntryMode(
+          this.data.currentTournament.id,
+          this.data.matchId,
+          'detailed'
+        )
+        if (!result) {
+          wx.showToast({ title: '切换失败', icon: 'none' })
+          return
+        }
+        this.loadData()
+      }
+    })
   },
 
   reopenMatch() {
@@ -323,18 +474,25 @@ Page({
     if (!this.ensureAdmin()) return
     const type = e.currentTarget.dataset.type || 'goal'
     const teamId = e.currentTarget.dataset.team
+    const isSupplement = String(e.currentTarget.dataset.supplement || '') === '1'
 
     this.setData({
       showEventModal: true,
       eventType: type,
       eventTeamId: teamId,
-      eventPlayerNumber: ''
+      eventPlayerNumber: '',
+      eventIsSupplement: isSupplement,
+      eventMinuteInput: ''
     })
   },
 
   // 关闭弹窗
   closeEventModal() {
-    this.setData({ showEventModal: false })
+    this.setData({
+      showEventModal: false,
+      eventIsSupplement: false,
+      eventMinuteInput: ''
+    })
   },
 
   // 选择事件类型
@@ -353,10 +511,23 @@ Page({
     this.setData({ eventPlayerNumber: (e.detail.value || '').trim() })
   },
 
+  onEventMinuteInput(e) {
+    this.setData({ eventMinuteInput: (e.detail.value || '').trim() })
+  },
+
   // 确认添加事件
   confirmEvent() {
     if (!this.ensureAdmin()) return
-    const { eventType, eventTeamId, eventPlayerNumber, matchId, currentTournament, elapsedMinute } = this.data
+    const {
+      eventType,
+      eventTeamId,
+      eventPlayerNumber,
+      eventIsSupplement,
+      eventMinuteInput,
+      matchId,
+      currentTournament,
+      elapsedMinute
+    } = this.data
 
     if (!eventTeamId) {
       wx.showToast({ title: '请选择球队', icon: 'none' })
@@ -369,6 +540,15 @@ Page({
 
     const team = currentTournament.teams.find(t => t.id === eventTeamId)
     const foundPlayer = team ? (team.players || []).find(p => String(p.number) === String(eventPlayerNumber)) : null
+    const supplementMinute = eventMinuteInput ? parseInt(eventMinuteInput, 10) : null
+    if (
+      eventIsSupplement &&
+      eventMinuteInput &&
+      (!Number.isFinite(supplementMinute) || supplementMinute < 1 || supplementMinute > 999)
+    ) {
+      wx.showToast({ title: '请输入正确的比赛分钟', icon: 'none' })
+      return
+    }
 
     const event = {
       type: eventType,
@@ -376,7 +556,27 @@ Page({
       playerId: foundPlayer ? foundPlayer.id : null,
       playerNumber: String(eventPlayerNumber),
       playerName: foundPlayer ? foundPlayer.name : '',
-      minute: elapsedMinute
+      minute: eventIsSupplement ? supplementMinute : elapsedMinute
+    }
+
+    if (eventIsSupplement) {
+      const supplemental = tournament.addSupplementalMatchEvent(
+        currentTournament.id,
+        matchId,
+        event
+      )
+      if (!supplemental.ok) {
+        const title = supplemental.reason === 'no-unregistered-goal'
+          ? '该队没有待补录进球'
+          : '补录失败'
+        wx.showToast({ title, icon: 'none' })
+        return
+      }
+      this.closeEventModal()
+      this.loadData()
+      const typeText = eventType === 'goal' ? '进球' : eventType === 'yellow' ? '黄牌' : '红牌'
+      wx.showToast({ title: `${typeText}已补录，比分不变`, icon: 'none' })
+      return
     }
 
     const result = tournament.addMatchEvent(currentTournament.id, matchId, event)
@@ -392,12 +592,27 @@ Page({
   removeEvent(e) {
     if (!this.ensureAdmin()) return
     const eventId = e.currentTarget.dataset.eventId
+    const isSupplement = String(e.currentTarget.dataset.supplement || '') === '1'
     wx.showModal({
       title: '确认删除',
-      content: '确定要删除这条记录吗？',
+      content: isSupplement
+        ? '确定删除这条补录事件吗？正式比分不会改变。'
+        : '确定要删除这条记录吗？',
       success: (res) => {
         if (res.confirm) {
-          tournament.removeMatchEvent(this.data.currentTournament.id, this.data.matchId, eventId)
+          if (isSupplement) {
+            tournament.removeSupplementalMatchEvent(
+              this.data.currentTournament.id,
+              this.data.matchId,
+              eventId
+            )
+          } else {
+            tournament.removeMatchEvent(
+              this.data.currentTournament.id,
+              this.data.matchId,
+              eventId
+            )
+          }
           this.loadData()
         }
       }

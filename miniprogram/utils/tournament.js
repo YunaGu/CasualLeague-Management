@@ -1761,10 +1761,13 @@ function addMatchEvent(tournamentId, matchId, event) {
   if (!match) return null
 
   event.id = generateId()
+  event.affectsScore = event.type === 'goal'
+    ? match.scoreEntryMode !== 'quick'
+    : false
   match.events.push(event)
 
   // 如果是进球，更新比分
-  if (event.type === 'goal') {
+  if (event.type === 'goal' && event.affectsScore) {
     if (event.teamId === match.homeTeam) {
       match.homeScore = (match.homeScore || 0) + 1
     } else if (event.teamId === match.awayTeam) {
@@ -1793,7 +1796,7 @@ function removeMatchEvent(tournamentId, matchId, eventId) {
 
   const event = match.events[eventIdx]
   // 如果是进球，还原比分
-  if (event.type === 'goal') {
+  if (event.type === 'goal' && event.affectsScore !== false) {
     if (event.teamId === match.homeTeam) {
       match.homeScore = Math.max(0, (match.homeScore || 0) - 1)
     } else if (event.teamId === match.awayTeam) {
@@ -1821,9 +1824,175 @@ function startMatch(tournamentId, matchId) {
   match.status = 'playing'
   match.homeScore = 0
   match.awayScore = 0
+  match.scoreEntryMode = 'detailed'
   match.startTime = Date.now()
   match.endTime = null
 
+  saveTournament(tournament)
+  return tournament
+}
+
+function normalizeQuickScore(value) {
+  const score = Number(value)
+  if (!Number.isFinite(score) || score < 0 || score > 99) return null
+  if (Math.floor(score) !== score) return null
+  return score
+}
+
+function countRecordedGoals(match, teamId) {
+  return (match.events || [])
+    .filter(event => event.type === 'goal' && event.teamId === teamId)
+    .length
+}
+
+/**
+ * 快速录入正式比分，不要求逐个记录进球事件。
+ */
+function updateMatchScoreQuickly(tournamentId, matchId, homeScoreInput, awayScoreInput) {
+  if (!canManageTournaments()) return { ok: false, reason: 'forbidden' }
+  const tournaments = getTournaments()
+  const tournament = tournaments.find(t => t.id === tournamentId)
+  if (!tournament) return { ok: false, reason: 'tournament-not-found' }
+
+  const match = tournament.matches.find(m => m.id === matchId)
+  if (!match) return { ok: false, reason: 'match-not-found' }
+  if (match.status === 'finished') return { ok: false, reason: 'match-finished' }
+
+  const homeScore = normalizeQuickScore(homeScoreInput)
+  const awayScore = normalizeQuickScore(awayScoreInput)
+  if (homeScore === null || awayScore === null) {
+    return { ok: false, reason: 'invalid-score' }
+  }
+
+  const recordedHomeGoals = countRecordedGoals(match, match.homeTeam)
+  const recordedAwayGoals = countRecordedGoals(match, match.awayTeam)
+  if (homeScore < recordedHomeGoals || awayScore < recordedAwayGoals) {
+    return {
+      ok: false,
+      reason: 'below-recorded-goals',
+      recordedHomeGoals,
+      recordedAwayGoals
+    }
+  }
+
+  ;(match.events || []).forEach(event => {
+    if (event.type === 'goal') event.affectsScore = false
+  })
+
+  if (match.status === 'pending') {
+    match.status = 'playing'
+    match.startTime = Date.now()
+    match.endTime = null
+  }
+  match.homeScore = homeScore
+  match.awayScore = awayScore
+  match.scoreEntryMode = 'quick'
+  match.quickScoreUpdatedAt = Date.now()
+
+  saveTournament(tournament)
+  return { ok: true, tournament, match }
+}
+
+function setMatchScoreEntryMode(tournamentId, matchId, mode) {
+  if (!canManageTournaments()) return null
+  if (mode !== 'quick' && mode !== 'detailed') return null
+  const tournaments = getTournaments()
+  const tournament = tournaments.find(t => t.id === tournamentId)
+  if (!tournament) return null
+
+  const match = tournament.matches.find(m => m.id === matchId)
+  if (!match || match.status === 'finished') return null
+
+  match.scoreEntryMode = mode
+  saveTournament(tournament)
+  return tournament
+}
+
+function getMatchUnregisteredGoals(match) {
+  if (!match || (match.status !== 'playing' && match.status !== 'finished')) {
+    return { home: 0, away: 0, total: 0 }
+  }
+  const homeScore = Number(match.homeScore) || 0
+  const awayScore = Number(match.awayScore) || 0
+  const home = Math.max(0, homeScore - countRecordedGoals(match, match.homeTeam))
+  const away = Math.max(0, awayScore - countRecordedGoals(match, match.awayTeam))
+  return { home, away, total: home + away }
+}
+
+function getTournamentUnregisteredGoals(tournament) {
+  return (tournament && tournament.matches ? tournament.matches : [])
+    .reduce((total, match) => total + getMatchUnregisteredGoals(match).total, 0)
+}
+
+function reconcileGroupRankingAfterSupplement(tournament, match) {
+  if (!match || match.stage !== 'group' || !isGroupStageComplete(tournament)) return
+  if (hasUnresolvedRankingTies(tournament)) {
+    tournament.stage = 'group'
+  } else if (tournament.templateConfig && tournament.templateConfig.enableKnockout) {
+    generateKnockoutMatches(tournament)
+  } else {
+    tournament.stage = 'finished'
+  }
+}
+
+/**
+ * 为已用快速比分结束的比赛补录事件。补录事件永远不改变正式比分。
+ */
+function addSupplementalMatchEvent(tournamentId, matchId, eventData) {
+  if (!canManageTournaments()) return { ok: false, reason: 'forbidden' }
+  const tournaments = getTournaments()
+  const tournament = tournaments.find(item => item.id === tournamentId)
+  if (!tournament) return { ok: false, reason: 'tournament-not-found' }
+
+  const match = tournament.matches.find(item => item.id === matchId)
+  if (!match) return { ok: false, reason: 'match-not-found' }
+  if (match.status !== 'finished' || !match.quickScoreUpdatedAt) {
+    return { ok: false, reason: 'not-quick-finished' }
+  }
+
+  const event = { ...(eventData || {}) }
+  if (!event.teamId || (event.teamId !== match.homeTeam && event.teamId !== match.awayTeam)) {
+    return { ok: false, reason: 'invalid-team' }
+  }
+  if (event.type !== 'goal' && event.type !== 'yellow' && event.type !== 'red') {
+    return { ok: false, reason: 'invalid-type' }
+  }
+
+  if (event.type === 'goal') {
+    const unregistered = getMatchUnregisteredGoals(match)
+    const remaining = event.teamId === match.homeTeam
+      ? unregistered.home
+      : unregistered.away
+    if (remaining <= 0) {
+      return { ok: false, reason: 'no-unregistered-goal' }
+    }
+  }
+
+  event.id = generateId()
+  event.affectsScore = false
+  event.source = 'supplement'
+  event.supplementedAt = Date.now()
+  match.events.push(event)
+
+  reconcileGroupRankingAfterSupplement(tournament, match)
+  saveTournament(tournament)
+  return { ok: true, tournament, match, event }
+}
+
+function removeSupplementalMatchEvent(tournamentId, matchId, eventId) {
+  if (!canManageTournaments()) return null
+  const tournaments = getTournaments()
+  const tournament = tournaments.find(item => item.id === tournamentId)
+  if (!tournament) return null
+
+  const match = tournament.matches.find(item => item.id === matchId)
+  if (!match || match.status !== 'finished') return null
+  const eventIndex = (match.events || [])
+    .findIndex(event => event.id === eventId && event.source === 'supplement')
+  if (eventIndex < 0) return null
+
+  match.events.splice(eventIndex, 1)
+  reconcileGroupRankingAfterSupplement(tournament, match)
   saveTournament(tournament)
   return tournament
 }
@@ -2380,6 +2549,12 @@ module.exports = {
   addMatchEvent,
   removeMatchEvent,
   startMatch,
+  updateMatchScoreQuickly,
+  setMatchScoreEntryMode,
+  getMatchUnregisteredGoals,
+  getTournamentUnregisteredGoals,
+  addSupplementalMatchEvent,
+  removeSupplementalMatchEvent,
   reopenMatch,
   finishMatch,
   updateMatchSchedule,

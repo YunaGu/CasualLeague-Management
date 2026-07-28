@@ -11,7 +11,16 @@ Page({
     currentRound: 0,
     rounds: [],
     hasKnockout: false,
-    isAdmin: false
+    isAdmin: false,
+    showQuickScoreModal: false,
+    quickMatchId: '',
+    quickHomeTeamName: '',
+    quickAwayTeamName: '',
+    quickHomeScore: 0,
+    quickAwayScore: 0,
+    quickHomePoints: 1,
+    quickAwayPoints: 1,
+    quickIsKnockout: false
   },
 
   onLoad(options) {
@@ -575,6 +584,141 @@ Page({
       wx.showToast({ title: '比赛已开始', icon: 'success' })
       this.loadData()
     }
+  },
+
+  openQuickScoreFromList(e) {
+    if (!this.ensureAdmin()) return
+    const matchId = e.currentTarget.dataset.id
+    const current = this.data.currentTournament
+    const match = current && (current.matches || []).find(item => item.id === matchId)
+    if (!match || match.status === 'finished') return
+
+    const homeScore = Number.isFinite(Number(match.homeScore)) ? Number(match.homeScore) : 0
+    const awayScore = Number.isFinite(Number(match.awayScore)) ? Number(match.awayScore) : 0
+    this.setData({
+      showQuickScoreModal: true,
+      quickMatchId: matchId,
+      quickHomeTeamName: this.getDisplayTeamName(match, 'home', current),
+      quickAwayTeamName: this.getDisplayTeamName(match, 'away', current),
+      quickHomeScore: homeScore,
+      quickAwayScore: awayScore,
+      quickIsKnockout: match.stage !== 'group'
+    })
+    this.updateQuickPoints(homeScore, awayScore)
+  },
+
+  closeQuickScore() {
+    this.setData({
+      showQuickScoreModal: false,
+      quickMatchId: ''
+    })
+  },
+
+  stopQuickScoreTap() {},
+
+  onQuickScoreInput(e) {
+    const side = e.currentTarget.dataset.side
+    const value = e.detail.value
+    if (side === 'home') {
+      this.setData({ quickHomeScore: value })
+    } else {
+      this.setData({ quickAwayScore: value })
+    }
+    this.updateQuickPoints(
+      side === 'home' ? value : this.data.quickHomeScore,
+      side === 'away' ? value : this.data.quickAwayScore
+    )
+  },
+
+  adjustQuickScore(e) {
+    const side = e.currentTarget.dataset.side
+    const delta = Number(e.currentTarget.dataset.delta) || 0
+    const key = side === 'home' ? 'quickHomeScore' : 'quickAwayScore'
+    const current = parseInt(this.data[key], 10) || 0
+    const value = Math.max(0, Math.min(99, current + delta))
+    this.setData({ [key]: value })
+    this.updateQuickPoints(
+      side === 'home' ? value : this.data.quickHomeScore,
+      side === 'away' ? value : this.data.quickAwayScore
+    )
+  },
+
+  updateQuickPoints(homeInput, awayInput) {
+    const home = parseInt(homeInput, 10) || 0
+    const away = parseInt(awayInput, 10) || 0
+    let homePoints = 1
+    let awayPoints = 1
+    if (home > away) {
+      homePoints = 3
+      awayPoints = 0
+    } else if (away > home) {
+      homePoints = 0
+      awayPoints = 3
+    }
+    this.setData({
+      quickHomePoints: homePoints,
+      quickAwayPoints: awayPoints
+    })
+  },
+
+  saveQuickScoreFromList() {
+    const result = this.persistQuickScoreFromList()
+    if (!result) return
+    this.closeQuickScore()
+    this.loadData()
+    wx.showToast({ title: '比分已保存', icon: 'success' })
+  },
+
+  finishQuickScoreFromList() {
+    const result = this.persistQuickScoreFromList()
+    if (!result) return
+    const matchId = this.data.quickMatchId
+    const isKnockoutDraw = result.match.stage !== 'group' &&
+      result.match.homeScore === result.match.awayScore
+    this.closeQuickScore()
+    this.loadData()
+
+    if (isKnockoutDraw) {
+      wx.showModal({
+        title: '需要点球结算',
+        content: '常规比分已保存。淘汰赛平局还需要录入点球结果。',
+        confirmText: '去录点球',
+        success: (res) => {
+          if (!res.confirm) return
+          wx.navigateTo({
+            url: `/packageMatch/pages/match/match?matchId=${matchId}`
+          })
+        }
+      })
+      return
+    }
+
+    const finished = tournament.finishMatch(
+      this.data.currentTournament.id,
+      matchId
+    )
+    if (!finished) {
+      wx.showToast({ title: '比赛结束失败', icon: 'none' })
+      return
+    }
+    wx.showToast({ title: '比分已保存，比赛结束', icon: 'success' })
+    this.loadData()
+  },
+
+  persistQuickScoreFromList() {
+    const result = tournament.updateMatchScoreQuickly(
+      this.data.currentTournament.id,
+      this.data.quickMatchId,
+      this.data.quickHomeScore,
+      this.data.quickAwayScore
+    )
+    if (result.ok) return result
+
+    const title = result.reason === 'below-recorded-goals'
+      ? `比分不能低于已登记进球（${result.recordedHomeGoals}:${result.recordedAwayGoals}）`
+      : '请输入 0-99 的整数比分'
+    wx.showToast({ title, icon: 'none', duration: 3000 })
+    return null
   },
 
   finishMatchFromList(e) {

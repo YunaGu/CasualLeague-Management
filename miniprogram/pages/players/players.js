@@ -10,7 +10,8 @@ Page({
     showEditModal: false,
     editPlayerName: '',
     editTarget: null,
-    isAdmin: false
+    isAdmin: false,
+    unregisteredGoalCount: 0
   },
 
   onLoad(options) {
@@ -53,11 +54,13 @@ Page({
 
     const topScorers = tournament.getTopScorers(current)
     const disciplineStats = tournament.getDisciplineStats(current)
+    const unregisteredGoalCount = tournament.getTournamentUnregisteredGoals(current)
 
     this.setData({
       currentTournament: current,
       topScorers,
-      disciplineStats
+      disciplineStats,
+      unregisteredGoalCount
     })
   },
 

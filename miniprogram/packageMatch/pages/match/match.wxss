@@ -88,10 +88,72 @@
   color: #666;
 }
 
+.quick-mode-notice {
+  margin-top: 18rpx;
+  padding: 14rpx 18rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  background: #fff8e1;
+  border-radius: 10rpx;
+  color: #795548;
+  font-size: 22rpx;
+  text-align: left;
+}
+
+.quick-mode-title {
+  color: #e65100;
+  font-weight: 600;
+}
 
 /* 操作按钮 */
 .action-buttons {
   margin-bottom: 20rpx;
+}
+
+.entry-mode-buttons,
+.quick-running-actions {
+  display: flex;
+  gap: 16rpx;
+}
+
+.entry-mode-button,
+.quick-running-actions button {
+  flex: 1;
+  margin: 0;
+}
+
+.btn-quick {
+  background: #ff9800;
+  color: #fff;
+  border-radius: 12rpx;
+  font-size: 30rpx;
+  padding: 20rpx 0;
+}
+
+.btn-quick::after,
+.btn-detail-switch::after,
+.btn-quick-outline::after {
+  border: none;
+}
+
+.btn-detail-switch {
+  background: #fff;
+  color: #1AAD19;
+  border: 2rpx solid #1AAD19;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  padding: 18rpx 0;
+}
+
+.btn-quick-outline {
+  margin: 0 0 16rpx;
+  background: #fff8e1;
+  color: #e65100;
+  border: 2rpx solid #ffb74d;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+  padding: 14rpx 0;
 }
 
 .event-buttons {
@@ -152,11 +214,175 @@
   border: none;
 }
 
+.quick-score-modal {
+  max-height: 88vh;
+}
+
+.quick-score-board {
+  display: flex;
+  align-items: flex-end;
+  gap: 18rpx;
+}
+
+.quick-score-team {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+.quick-score-team-name {
+  display: block;
+  min-height: 72rpx;
+  font-size: 27rpx;
+  font-weight: 600;
+  color: #333;
+  line-height: 1.35;
+}
+
+.quick-score-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+}
+
+.quick-score-step {
+  width: 58rpx;
+  height: 58rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #f5f5f5;
+  color: #666;
+  font-size: 38rpx;
+}
+
+.quick-score-step.plus {
+  background: #e8f5e9;
+  color: #1AAD19;
+}
+
+.quick-score-input {
+  width: 82rpx;
+  height: 84rpx;
+  border: 2rpx solid #ddd;
+  border-radius: 12rpx;
+  color: #222;
+  font-size: 52rpx;
+  font-weight: 700;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.quick-score-colon {
+  padding-bottom: 12rpx;
+  color: #999;
+  font-size: 44rpx;
+}
+
+.quick-points-preview {
+  margin-top: 28rpx;
+  padding: 16rpx;
+  background: #e8f5e9;
+  border-radius: 10rpx;
+  color: #1b5e20;
+  font-size: 24rpx;
+  text-align: center;
+}
+
+.quick-points-preview.knockout {
+  background: #fff8e1;
+  color: #795548;
+}
+
+.quick-score-help {
+  margin-top: 12rpx;
+  color: #999;
+  font-size: 21rpx;
+  text-align: center;
+}
+
+.quick-score-footer {
+  display: flex;
+  gap: 10rpx;
+  padding: 20rpx 24rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.quick-footer-button {
+  flex: 1;
+  height: 72rpx;
+  margin: 0;
+  padding: 0 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10rpx;
+  font-size: 24rpx;
+  line-height: 1.1;
+}
+
+.btn-save-score {
+  background: #fff;
+  color: #1AAD19;
+  border: 2rpx solid #1AAD19;
+}
+
+.btn-finish-score {
+  background: #ff5722;
+  color: #fff;
+  border: none;
+}
+
+.btn-save-score::after,
+.btn-finish-score::after {
+  border: none;
+}
+
+.quick-score-footer .quick-footer-button {
+  height: 72rpx;
+  margin: 0;
+  padding: 0 8rpx;
+  font-size: 24rpx;
+  line-height: 1.1;
+}
+
 .reopen-tip {
   display: block;
   margin-top: 12rpx;
   color: #999;
   font-size: 22rpx;
+}
+
+.supplement-card {
+  border: 2rpx solid #ffe0b2;
+}
+
+.supplement-title {
+  margin-bottom: 8rpx;
+  color: #e65100;
+}
+
+.supplement-tip {
+  margin-bottom: 14rpx;
+  color: #795548;
+  font-size: 22rpx;
+  line-height: 1.55;
+}
+
+.supplement-remaining {
+  margin-bottom: 16rpx;
+  padding: 12rpx 14rpx;
+  border-radius: 8rpx;
+  background: #fff8e1;
+  color: #e65100;
+  font-size: 22rpx;
+}
+
+.supplement-card-buttons {
+  margin-bottom: 0;
 }
 
 /* 时间线 */
@@ -202,6 +428,20 @@
 .timeline-team {
   font-size: 22rpx;
   color: #999;
+}
+
+.timeline-team-row {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.supplement-badge {
+  padding: 1rpx 7rpx;
+  border-radius: 6rpx;
+  background: #fff3e0;
+  color: #e65100;
+  font-size: 18rpx;
 }
 
 .timeline-minute {

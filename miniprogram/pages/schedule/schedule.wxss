@@ -126,6 +126,14 @@
   color: #999;
 }
 
+.quick-mode-tag {
+  padding: 4rpx 10rpx;
+  border-radius: 8rpx;
+  background: #fff3e0;
+  color: #e65100;
+  font-size: 19rpx;
+}
+
 .schedule-extra {
   margin-top: 5rpx;
   text-align: center;
@@ -239,6 +247,11 @@
   color: #1b5e20;
 }
 
+.action-btn.quick {
+  background: #fff3e0;
+  color: #e65100;
+}
+
 .action-btn.finish {
   background: #ffebee;
   color: #b71c1c;
@@ -249,6 +262,11 @@
   color: #e65100;
 }
 
+.action-btn.supplement {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
 /* 淘汰赛标签 */
 .knockout-label {
   font-size: 24rpx;
@@ -256,4 +274,164 @@
   font-weight: 600;
   text-align: center;
   margin-bottom: 10rpx;
+}
+
+.quick-modal-mask {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.quick-modal-content {
+  width: 100%;
+  max-height: 88vh;
+  overflow: hidden;
+  background: #fff;
+  border-radius: 24rpx 24rpx 0 0;
+}
+
+.quick-modal-title {
+  padding: 30rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+  color: #333;
+  font-size: 32rpx;
+  font-weight: 600;
+  text-align: center;
+}
+
+.quick-modal-body {
+  padding: 32rpx 28rpx 26rpx;
+}
+
+.quick-score-board {
+  display: flex;
+  align-items: flex-end;
+  gap: 18rpx;
+}
+
+.quick-score-team {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+.quick-score-team-name {
+  display: block;
+  min-height: 72rpx;
+  color: #333;
+  font-size: 27rpx;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.quick-score-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+}
+
+.quick-score-step {
+  width: 58rpx;
+  height: 58rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #f5f5f5;
+  color: #666;
+  font-size: 38rpx;
+}
+
+.quick-score-step.plus {
+  background: #e8f5e9;
+  color: #1AAD19;
+}
+
+.quick-score-input {
+  width: 82rpx;
+  height: 84rpx;
+  box-sizing: border-box;
+  border: 2rpx solid #ddd;
+  border-radius: 12rpx;
+  color: #222;
+  font-size: 52rpx;
+  font-weight: 700;
+  text-align: center;
+}
+
+.quick-score-colon {
+  padding-bottom: 12rpx;
+  color: #999;
+  font-size: 44rpx;
+}
+
+.quick-points-preview {
+  margin-top: 28rpx;
+  padding: 16rpx;
+  border-radius: 10rpx;
+  background: #e8f5e9;
+  color: #1b5e20;
+  font-size: 24rpx;
+  text-align: center;
+}
+
+.quick-points-preview.knockout {
+  background: #fff8e1;
+  color: #795548;
+}
+
+.quick-score-help {
+  margin-top: 12rpx;
+  color: #999;
+  font-size: 21rpx;
+  text-align: center;
+}
+
+.quick-modal-footer {
+  display: flex;
+  gap: 10rpx;
+  padding: 20rpx 24rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.quick-footer-button {
+  flex: 1;
+  height: 72rpx;
+  margin: 0;
+  padding: 0 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10rpx;
+  font-size: 24rpx;
+  line-height: 1.1;
+}
+
+.quick-footer-button::after {
+  border: none;
+}
+
+.quick-footer-button.cancel {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.quick-footer-button.save {
+  border: 2rpx solid #1AAD19;
+  background: #fff;
+  color: #1AAD19;
+}
+
+.quick-footer-button.finish {
+  border: none;
+  background: #ff5722;
+  color: #fff;
 }

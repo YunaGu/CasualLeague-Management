@@ -5,6 +5,11 @@
   </view>
 
   <block wx:if="{{currentTournament}}">
+    <view class="quick-score-warning" wx:if="{{unregisteredGoalCount > 0}}">
+      <view class="quick-score-warning-title">⚡ 有 {{unregisteredGoalCount}} 个进球未登记球员</view>
+      <text>这些进球已计入正式比分和积分榜，但暂不计入射手榜。</text>
+    </view>
+
     <!-- 标签切换 -->
     <view class="tabs">
       <view class="tab {{activeTab === 'scorers' ? 'active' : ''}}" bindtap="switchTab" data-tab="scorers">

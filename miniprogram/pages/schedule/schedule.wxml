@@ -41,6 +41,7 @@
             <view class="match-info">
               <text class="tag status-tag {{match.status === 'playing' ? 'tag-red' : match.status === 'finished' ? 'tag-gray' : 'tag-blue'}}">{{match.status === 'playing' ? '进行中' : match.status === 'finished' ? '已结束' : '未开始'}}</text>
               <text class="group-label">{{match.groupLabel}}</text>
+              <text class="quick-mode-tag" wx:if="{{match.scoreEntryMode === 'quick'}}">⚡ 快速</text>
             </view>
             <view class="schedule-extra" wx:if="{{match.scheduleText}}">
               <text>{{match.scheduleText}}</text>
@@ -63,8 +64,10 @@
             </view>
             <view class="match-actions" wx:if="{{isAdmin}}">
               <view class="action-btn edit" catchtap="editScheduleTap" data-id="{{match.id}}">编辑排程</view>
+              <view class="action-btn quick" wx:if="{{match.status !== 'finished'}}" catchtap="openQuickScoreFromList" data-id="{{match.id}}">快速计分</view>
               <view class="action-btn start" wx:if="{{match.status === 'pending'}}" catchtap="startMatchFromList" data-id="{{match.id}}">开始比赛</view>
               <view class="action-btn finish" wx:if="{{match.status === 'playing'}}" catchtap="finishMatchFromList" data-id="{{match.id}}">结束比赛</view>
+              <view class="action-btn supplement" wx:if="{{match.status === 'finished' && match.quickScoreUpdatedAt}}" catchtap="goMatch" data-id="{{match.id}}">补录事件</view>
               <view class="action-btn reopen" wx:if="{{match.status === 'finished'}}" catchtap="reopenMatchFromList" data-id="{{match.id}}">重新编辑</view>
             </view>
           </view>
@@ -95,6 +98,7 @@
           </view>
           <view class="match-info">
             <text class="tag status-tag {{item.status === 'playing' ? 'tag-red' : item.status === 'finished' ? 'tag-gray' : 'tag-blue'}}">{{item.status === 'playing' ? '进行中' : item.status === 'finished' ? '已结束' : '未开始'}}</text>
+            <text class="quick-mode-tag" wx:if="{{item.scoreEntryMode === 'quick'}}">⚡ 快速</text>
           </view>
           <view class="schedule-extra" wx:if="{{item.scheduleText}}">
             <text>{{item.scheduleText}}</text>
@@ -117,12 +121,54 @@
           </view>
           <view class="match-actions" wx:if="{{isAdmin}}">
             <view class="action-btn edit" catchtap="editScheduleTap" data-id="{{item.id}}">编辑排程</view>
+            <view class="action-btn quick" wx:if="{{!item.preview && item.status !== 'finished'}}" catchtap="openQuickScoreFromList" data-id="{{item.id}}">快速计分</view>
             <view class="action-btn start" wx:if="{{!item.preview && item.status === 'pending'}}" catchtap="startMatchFromList" data-id="{{item.id}}">开始比赛</view>
             <view class="action-btn finish" wx:if="{{!item.preview && item.status === 'playing'}}" catchtap="finishMatchFromList" data-id="{{item.id}}">结束比赛</view>
+            <view class="action-btn supplement" wx:if="{{!item.preview && item.status === 'finished' && item.quickScoreUpdatedAt}}" catchtap="goMatch" data-id="{{item.id}}">补录事件</view>
             <view class="action-btn reopen" wx:if="{{!item.preview && item.status === 'finished'}}" catchtap="reopenMatchFromList" data-id="{{item.id}}">重新编辑</view>
           </view>
         </view>
       </view>
     </block>
   </block>
+</view>
+
+<!-- 快速计分弹窗 -->
+<view class="quick-modal-mask" wx:if="{{showQuickScoreModal}}" bindtap="closeQuickScore">
+  <view class="quick-modal-content" catchtap="stopQuickScoreTap">
+    <view class="quick-modal-title">⚡ 快速计分</view>
+    <view class="quick-modal-body">
+      <view class="quick-score-board">
+        <view class="quick-score-team">
+          <text class="quick-score-team-name">{{quickHomeTeamName}}</text>
+          <view class="quick-score-control">
+            <view class="quick-score-step" bindtap="adjustQuickScore" data-side="home" data-delta="-1">−</view>
+            <input class="quick-score-input" type="number" maxlength="2" value="{{quickHomeScore}}" bindinput="onQuickScoreInput" data-side="home" />
+            <view class="quick-score-step plus" bindtap="adjustQuickScore" data-side="home" data-delta="1">＋</view>
+          </view>
+        </view>
+        <text class="quick-score-colon">:</text>
+        <view class="quick-score-team">
+          <text class="quick-score-team-name">{{quickAwayTeamName}}</text>
+          <view class="quick-score-control">
+            <view class="quick-score-step" bindtap="adjustQuickScore" data-side="away" data-delta="-1">−</view>
+            <input class="quick-score-input" type="number" maxlength="2" value="{{quickAwayScore}}" bindinput="onQuickScoreInput" data-side="away" />
+            <view class="quick-score-step plus" bindtap="adjustQuickScore" data-side="away" data-delta="1">＋</view>
+          </view>
+        </view>
+      </view>
+      <view class="quick-points-preview" wx:if="{{!quickIsKnockout}}">
+        本场积分：{{quickHomeTeamName}} +{{quickHomePoints}} ｜ {{quickAwayTeamName}} +{{quickAwayPoints}}
+      </view>
+      <view class="quick-points-preview knockout" wx:else>
+        淘汰赛不计积分；常规比分相同时需继续录入点球。
+      </view>
+      <view class="quick-score-help">快速比分不会自动计入球员射手榜或红黄牌统计。</view>
+    </view>
+    <view class="quick-modal-footer">
+      <button class="quick-footer-button cancel" bindtap="closeQuickScore">取消</button>
+      <button class="quick-footer-button save" bindtap="saveQuickScoreFromList">仅保存</button>
+      <button class="quick-footer-button finish" bindtap="finishQuickScoreFromList">保存并结束</button>
+    </view>
+  </view>
 </view>
